@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="centered-content">
+    <h1>Ваши базы данных</h1>
+
+    {% if tables %}
+        <div class="table-container">
+            {% for table in tables %}
+                <div class="table-block">
+                    <h2>Таблица {{ forloop.counter }}
+                        <span style="float: right;">
+                            <a href="{% url 'delete_table' table.pk %}" onclick="return confirm('Вы уверены, что хотите удалить эту таблицу?');">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="gray" class="bi bi-x-lg" viewBox="0 0 16 16">
+                                    <path d="M1.293 1.293a1 1 0 0 1 1.414 0L8 6.586l5.293-5.293a1 1 0 1 1 1.414 1.414L9.414 8l5.293 5.293a1 1 0 0 1-1.414 1.414L8 9.414l-5.293 5.293a1 1 0 0 1-1.414-1.414L6.586 8 1.293 2.707a1 1 0 0 1 0-1.414z"/>
+                                </svg>
+                            </a>
+                        </span>
+                    </h2>
+                    <ul>
+                        {% for point in table.points.all %}
+                            <li>{{ point }}</li>
+                        {% endfor %}
+                        <h5>Температура {{ table.temperature }}К</h5>
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>У вас пока нет таблиц.</p>
+    {% endif %}
+
+    <a href="{% url 'create_table' %}"><button>Создать новую таблицу</button></a>
+</div>
+
+<style>
+    .centered-content {
+        max-width: 1200px;
+        margin: 50px auto;
+        text-align: center;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        margin-top: 0;
+    }
+
+    .table-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .table-block {
+        flex: 0 1 calc(33.333% - 40px);
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    button {
+        background-color: #4197DE;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 992px) {
+        .table-block {
+            flex-basis: calc(50% - 40px);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .table-block {
+            flex-basis: 100%;
+        }
+    }
+</style>
+
+{% endblock %}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #4197DE;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+        }
+
+        header a {
+            text-decoration: none;
+            color: white;
+            margin-left: 20px;
+        }
+
+        header a:hover {
+            text-decoration: underline;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .icon {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<header>
+    <div class="logo">
+        <a href="{% url 'home' %}"><i class="fas fa-atom atom-icon"></i></a>
+    </div>
+    <nav>
+
+        <a href="{% url 'databases' %}"><i class="fa-solid fa-table icon"></i> Базы данных</a>
+        <a href="{% url 'graphs' %}"><i class="fa-solid fa-chart-line icon"></i> Графики</a>
+        <a href="{% url 'calculations' %}"><i class="fa-solid fa-calculator icon"></i> Расчеты</a>
+    </nav>
+</header>
+
+<body>
+{% block content %}
+{% endblock %}
+</body>
+</html>

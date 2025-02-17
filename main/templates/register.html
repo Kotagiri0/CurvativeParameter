@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<style> a { text-decoration: none; color: #4197DE; } .container { max-width: 400px; margin: 50px auto; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 5px; background-color: #fff; text-align: center; } h1 { margin-bottom: 20px; } input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; } button { width: 100%; padding: 10px; background-color: #4197DE; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; } button:hover { background-color: #367bc0; } .atom-icon { font-size: 60px; color: #4197DE; margin-bottom: 20px; } </style>
+
+<div class="container">
+    <i class="fas fa-atom atom-icon"></i>
+    <h1>Регистрация</h1>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="text" id="username" name="username" placeholder="Имя пользователя" required>
+
+        <input type="password" id="password1" name="password1" placeholder="Пароль" required>
+
+        <input type="password" id="password2" name="password2" placeholder="Повторите пароль" required>
+
+        <button type="submit">Зарегистрироваться</button>
+        Зарегистрированы? <a href="{% url 'register' %}">Вход</a>
+
+    </form>
+</div>
+{% endblock %}

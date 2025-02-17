@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Создание новой таблицы</h1>
+
+    <form method="post" novalidate>
+        <textarea name="data" rows="10">...;...
+...;...
+...;...
+...;...
+...;...
+...;...
+...;...
+...;...
+T;T</textarea>
+
+        {% csrf_token %}
+
+        <div class="note">
+            Памятка:<br />
+            Вещественные числа пишутся через '.'<br />
+            Данные разделяются символом ';'<br />
+            Данные - точки на графике<br />
+            Последняя строка - продублированная температура в кельвинах (T;T).
+        </div>
+
+        <button type="submit">Создать</button>
+    </form>
+</div>
+
+
+<style>
+    .container {
+        max-width: 800px;
+        text-align: center;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        margin-top: 0;
+    }
+
+    form {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    textarea {
+        background-color: #D9D9D9;
+        border: none;
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+        resize: none;
+        height: 250px;
+    }
+
+    .note {
+        background-color: #f2f2f2;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        height: fit-content;
+    }
+
+    button {
+        background-color: #4197DE;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        cursor: pointer;
+        grid-column: 1 / span 2;
+        margin-top: 20px;
+    }
+</style>
+
+{% endblock %}
