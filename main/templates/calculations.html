@@ -3,7 +3,25 @@
 {% block title %}Расчеты{% endblock %}
 {% block content %}
 <body>
+    <h1>Выбор алгоритма оптимизации</h1>
+    <form id="algoForm" method="post">
+        {% csrf_token %}
+        <label for="algorithm">Выберите алгоритм:</label>
+        <select id="algorithm" name="algorithm">
+            <option value="gauss">Метод Гаусса</option>
+            <option value="gauss_step">Метод Гаусса с переменным шагом</option>
+            <option value="gradient">Градиентный спуск</option>
+            <option value="gradient_step">Шаговый градиентный спуск</option>
+            <option value="otzhig">Отжиг (simulated annealing)</option>
+        </select>
+        <button type="submit">Выполнить</button>
+    </form>
+
+    {% if a and b %}
+        <p>Параметры метода Гаусса: a={{ a }}, b={{ b }}</p>
+    {% elif c and d %}
+        <p>Параметры метода Гаусса с переменным шагом: c={{ c }}, d={{ d }}</p>
+    {% endif %}
 
 </body>
 {% endblock %}
-

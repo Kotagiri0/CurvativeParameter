@@ -8,6 +8,25 @@ from django.contrib.auth import login, logout, authenticate
 from .forms import RegisterForm, LoginForm
 from .models import Point, Table
 
+from . import gauss
+from . import gauss_step
+
+
+def calculations_view(request):
+    if request.method == 'POST':
+        algorithm = request.POST.get('algorithm')
+
+        if algorithm == 'gauss':
+            context = {'a': gauss.a, 'b': gauss.b}
+        elif algorithm == 'gauss_step':
+            context = {'c': gauss_step.c, 'd': gauss_step.d}
+        else:
+            context = {}
+    else:
+        context = {}
+    print(f"Контекст:{context}")
+
+    return render(request, 'calculations.html', context)
 
 def home_page(request):
     return render(request, 'index.html')
