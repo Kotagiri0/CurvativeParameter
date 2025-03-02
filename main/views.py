@@ -8,18 +8,23 @@ from django.contrib.auth import login, logout, authenticate
 from .forms import RegisterForm, LoginForm
 from .models import Point, Table
 
-from . import gauss
-from . import gauss_step
+from . import gauss, gauss_step, gradient, gradient_step, otzhig
 
 
-def calculations_view(request):
+def calculations(request):
     if request.method == 'POST':
         algorithm = request.POST.get('algorithm')
 
         if algorithm == 'gauss':
-            context = {'a': gauss.a, 'b': gauss.b}
+            context = {'a': gauss.gauss_a, 'b': gauss.gauss_b}
         elif algorithm == 'gauss_step':
-            context = {'c': gauss_step.c, 'd': gauss_step.d}
+            context = {'a': gauss_step.gauss_step_a, 'b': gauss_step.gauss_step_b}
+        elif algorithm == 'gradient':
+            context = {'a': gradient.gradient_a, 'b': gradient.gradient_b}
+        elif algorithm == 'gradient_step':
+            context = {'a': gradient_step.gradient_step_a, 'b': gradient_step.gradient_step_b}
+        elif algorithm == 'otzhig':
+            context = {'a': otzhig.otzhig_a, 'b': otzhig.otzhig_b}
         else:
             context = {}
     else:
@@ -63,8 +68,6 @@ def logout_user(request):
 def graphs(request):
     return render(request, 'graphs.html')
 
-def calculations(request):
-    return render(request, 'calculations.html')
 
 @login_required
 def databases(request):

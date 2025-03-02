@@ -1,5 +1,8 @@
 import os
 import sqlite3
+import random
+from math import exp
+import numpy as np
 table_ind = 1
 def get_data_from_db(db_path):
     conn = sqlite3.connect(db_path)
@@ -14,10 +17,14 @@ def get_data_from_db(db_path):
     cursor.close()
     conn.close()
     return points_list, temp_list
+
 def func(a, b, x2):
     rt = temp_list[table_ind]*8.314462618    # температура на газовую постоянную
     x1 = 1 - x2
     return rt * x1 * x2*(x1 * a + x2 * b)
+
+
+
 def sum_of_deviations(a, b):
     sum = 0
     for i in range(0, len(l_points)):
@@ -26,39 +33,48 @@ def sum_of_deviations(a, b):
         sum += (func(a, b, x2) - ge) ** 2
     return sum / len(l_points)
 
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 db_path = os.path.join(parent_dir, 'db.sqlite3')
 l_points, temp_list = get_data_from_db(db_path)
 
-a=1
-b=1
+a=2
+b=2
+
 eps = 0.0000001
 flag = True
+
+ans = sum_of_deviations(a, b)
+
+t = 1.0
+
 count = 0
-f_stepa = True
-f_stepb = True
-b_stepa = False
-b_stepb = False
-count_iter_a = 0
-count_iter_b = 0
-const_learning = 1.01
-flag_ch = False
-da, db = 0.0001, 0.0001
-count_iter = 0
-iter_max = 10
+
 while flag:
+    t *= 0.9999
+    otzh_a = random.uniform(0, 10)
+    otzh_b = random.uniform(0, 10)
+    val = sum_of_deviations(otzh_a, otzh_b)
+    if t > eps and (val <= ans or random.uniform(0, 1) < exp((ans - val) / t)):
+        ans = val
+        a = otzh_a
+        b = otzh_b
+
     pa, pb = a, b
+    da, db = 0.00001, 0.00001
+
     if sum_of_deviations(a + da, b) < sum_of_deviations(a, b):
         a += da
     elif sum_of_deviations(a - da, b) < sum_of_deviations(a, b):
         a -= da
+
     if sum_of_deviations(a, b + db) < sum_of_deviations(a, b):
         b += db
     elif sum_of_deviations(a, b - db) < sum_of_deviations(a, b):
         b -= db
-    count += 1
-    flag = abs(sum_of_deviations(a, b) - sum_of_deviations(pa, pb)) > eps
 
-gauss_a = a
-gauss_b = b
+    flag = abs(sum_of_deviations(a, b) - sum_of_deviations(pa, pb)) > eps
+    count+=1
+otzhig_a = a
+otzhig_b = b

@@ -1,6 +1,10 @@
-import os
+import csv
 import sqlite3
+import os
+
 table_ind = 1
+
+
 def get_data_from_db(db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -25,7 +29,6 @@ def sum_of_deviations(a, b):
         ge = l_points[i][1]
         sum += (func(a, b, x2) - ge) ** 2
     return sum / len(l_points)
-
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 db_path = os.path.join(parent_dir, 'db.sqlite3')
@@ -49,16 +52,43 @@ count_iter = 0
 iter_max = 10
 while flag:
     pa, pb = a, b
+    if count_iter_a >= iter_max:
+        da *= const_learning
+    else:
+        da = 0.0001
+    if count_iter_b >= iter_max:
+        db *= const_learning
+    else:
+        db = 0.0001
     if sum_of_deviations(a + da, b) < sum_of_deviations(a, b):
         a += da
+        if b_stepa:
+            f_stepa = True
+            b_stepa = False
+            count_iter_a = 0
+        count_iter_a += 1
     elif sum_of_deviations(a - da, b) < sum_of_deviations(a, b):
         a -= da
+        if f_stepa:
+            f_stepa = False
+            b_stepa = True
+            count_iter_a = 0
+        count_iter_a += 1
     if sum_of_deviations(a, b + db) < sum_of_deviations(a, b):
         b += db
+        if b_stepb:
+            f_stepb = True
+            b_stepb = False
+            count_iter_b = 0
+        count_iter_b += 1
     elif sum_of_deviations(a, b - db) < sum_of_deviations(a, b):
         b -= db
+        if f_stepb:
+            f_stepb = False
+            b_stepb = True
+            count_iter_b = 0
+        count_iter_b += 1
     count += 1
     flag = abs(sum_of_deviations(a, b) - sum_of_deviations(pa, pb)) > eps
-
-gauss_a = a
-gauss_b = b
+gradient_step_a = a
+gradient_step_b = b
