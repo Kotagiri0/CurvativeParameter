@@ -6,29 +6,54 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from .forms import RegisterForm, LoginForm
+from .gauss import table_ind
 from .models import Point, Table
 
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 
 
+def databases(request):
+    tables = Table.objects.all()
+    context = {"tables": tables}
+    return render(request, "databases.html", context)
+
 def calculations(request):
+    tables = Table.objects.all()
     if request.method == 'POST':
         algorithm = request.POST.get('algorithm')
+        table_id = int(request.POST.get('tabledata')) - 1
+
+        print(table_id, 'infunc')
 
         if algorithm == 'gauss':
-            context = {'a': gauss.gauss_a, 'b': gauss.gauss_b}
+            print(gauss.table_ind, 'infileBEFORE')
+            gauss.table_ind = table_id
+            print(gauss.table_ind, 'infileAFTER')
+            gauss_a, gauss_b = gauss.gauss(tables, table_id)
+            print(gauss_a, gauss_b, "kqnfqb")
+            context = {'a': gauss_a, 'b': gauss_b}
+
         elif algorithm == 'gauss_step':
+            gauss_step.table_ind = table_id
             context = {'a': gauss_step.gauss_step_a, 'b': gauss_step.gauss_step_b}
+
         elif algorithm == 'gradient':
+            gradient.table_ind = table_id
             context = {'a': gradient.gradient_a, 'b': gradient.gradient_b}
+
         elif algorithm == 'gradient_step':
+            gradient_step.table_ind = table_id
             context = {'a': gradient_step.gradient_step_a, 'b': gradient_step.gradient_step_b}
+
         elif algorithm == 'otzhig':
+            otzhig.table_ind = table_id
             context = {'a': otzhig.otzhig_a, 'b': otzhig.otzhig_b}
         else:
             context = {}
     else:
         context = {}
+
+    context["tables"] = tables
     print(f"Контекст:{context}")
 
     return render(request, 'calculations.html', context)

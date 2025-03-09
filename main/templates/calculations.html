@@ -14,9 +14,16 @@
             <option value="gradient_step">Шаговый градиентный спуск</option>
             <option value="otzhig">Отжиг (simulated annealing)</option>
         </select>
+        <div class="table-container">
+            <label for="tabledata">Выберите таблицу:</label>
+            <select id="tabledata" name="tabledata">
+                {% for table in tables %}
+                    <option value={{forloop.counter}}>Таблица {{ forloop.counter }}</option>
+                {% endfor %}
+            </select>
+        </div>
         <button type="submit">Выполнить</button>
     </form>
-
     {% if a and b %}
         <p>Параметры метода Гаусса: a={{ a }}, b={{ b }}</p>
     {% elif c and d %}
