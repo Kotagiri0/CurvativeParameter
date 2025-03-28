@@ -1,94 +1,60 @@
-import csv
-import sqlite3
-import os
+import numpy as np
+def derivative(l_param, tables, table_ind, l_points):
+    a, b = l_param[0], l_param[1]
+    e = 0.0001
+    da, pva = 1, 0
+    va = (sum_of_deviations([a+da, b], tables, table_ind, l_points)-sum_of_deviations(l_param, tables, table_ind, l_points)) / da
+    while (abs(va-pva)>e):
+        pva = va
+        da *= 0.5
+        va = (sum_of_deviations([a+da, b], tables, table_ind, l_points)-sum_of_deviations(l_param, tables, table_ind, l_points)) / da
+    db, pvb = 1, 0
+    vb = (sum_of_deviations([a, b+db], tables, table_ind, l_points) - sum_of_deviations(l_param, tables, table_ind, l_points)) / db
+    while (abs(vb - pvb) > e):
+        pvb = vb
+        db *= 0.5
+        vb = (sum_of_deviations([a, b+db], tables, table_ind, l_points) - sum_of_deviations(l_param, tables, table_ind, l_points)) / db
+    return [va, vb]
 
-table_ind = 1
-
-
-def get_data_from_db(db_path):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    query = f""" SELECT mp.x_value, mp.y_value FROM main_table_points mtp JOIN main_point mp ON mtp.point_id = mp.id WHERE mtp.table_id = {table_ind+1} """
-    cursor.execute(query)
-    rows = cursor.fetchall()
-    points_list = [(row[0], row[1]) for row in rows]
-    cursor.execute('SELECT temperature FROM main_table')
-    temp_rows = cursor.fetchall()
-    temp_list = [temp[0] for temp in temp_rows]
-    cursor.close()
-    conn.close()
-    return points_list, temp_list
-def func(a, b, x2):
-    rt = temp_list[table_ind]*8.314462618    # температура на газовую постоянную
+def func(l_param, x2, tables, table_ind):
+    rt = tables[table_ind].temperature * 8.314462618
     x1 = 1 - x2
-    return rt * x1 * x2*(x1 * a + x2 * b)
-def sum_of_deviations(a, b):
+    return rt * x1 * x2*(x1 * l_param[0] + x2 * l_param[1])
+
+def sum_of_deviations(l_param, tables, table_ind, l_points):
     sum = 0
     for i in range(0, len(l_points)):
-        x2 = l_points[i][0]
-        ge = l_points[i][1]
-        sum += (func(a, b, x2) - ge) ** 2
+        x2, ge = l_points[i][0], l_points[i][1]
+        sum += (func(l_param, x2, tables, table_ind) - ge) ** 2
     return sum / len(l_points)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-db_path = os.path.join(parent_dir, 'db.sqlite3')
-l_points, temp_list = get_data_from_db(db_path)
-
-a=1
-b=1
-eps = 0.0000001
-flag = True
-count = 0
-f_stepa = True
-f_stepb = True
-b_stepa = False
-b_stepb = False
-count_iter_a = 0
-count_iter_b = 0
-const_learning = 1.01
-flag_ch = False
-da, db = 0.0001, 0.0001
-count_iter = 0
-iter_max = 10
-while flag:
-    pa, pb = a, b
-    if count_iter_a >= iter_max:
-        da *= const_learning
-    else:
-        da = 0.0001
-    if count_iter_b >= iter_max:
-        db *= const_learning
-    else:
-        db = 0.0001
-    if sum_of_deviations(a + da, b) < sum_of_deviations(a, b):
-        a += da
-        if b_stepa:
-            f_stepa = True
-            b_stepa = False
-            count_iter_a = 0
-        count_iter_a += 1
-    elif sum_of_deviations(a - da, b) < sum_of_deviations(a, b):
-        a -= da
-        if f_stepa:
-            f_stepa = False
-            b_stepa = True
-            count_iter_a = 0
-        count_iter_a += 1
-    if sum_of_deviations(a, b + db) < sum_of_deviations(a, b):
-        b += db
-        if b_stepb:
-            f_stepb = True
-            b_stepb = False
-            count_iter_b = 0
-        count_iter_b += 1
-    elif sum_of_deviations(a, b - db) < sum_of_deviations(a, b):
-        b -= db
-        if f_stepb:
-            f_stepb = False
-            b_stepb = True
-            count_iter_b = 0
-        count_iter_b += 1
-    count += 1
-    flag = abs(sum_of_deviations(a, b) - sum_of_deviations(pa, pb)) > eps
-gradient_step_a = a
-gradient_step_b = b
+def gradient_step(tables, table_ind):
+    l_points = []
+    for point in tables[table_ind].points.all():
+        l_points.append((point.x_value, point.y_value))
+    l_param = [1, 1]
+    eps = 0.0001
+    d = 0.01
+    flag = True
+    count, count_iter = 0, 0
+    iter_max = 10
+    const_learning = 1.01
+    while flag:
+        pa, pb = l_param[0], l_param[1]
+        pda, pdb = derivative([pa, pb], tables, table_ind, l_points)
+        da, db = derivative(l_param, tables, table_ind, l_points)
+        if count_iter >= iter_max:
+            d *= const_learning
+        if np.sign(pda) != np.sign(da) and np.sign(pdb) != np.sign(db):
+            count_iter = 0
+            d = 0.01
+        if ((da ** 2 + db ** 2) ** 0.5) < eps:
+            break
+        l_param[0], l_param[1] = pa - da * d / ((da ** 2 + db ** 2) ** 0.5), pb - db * d / ((da ** 2 + db ** 2) ** 0.5)
+        if abs(sum_of_deviations(l_param, tables, table_ind, l_points) - sum_of_deviations([pa, pb], tables, table_ind, l_points)) < eps:
+            d *= 0.5
+            if d < 10e-5:
+                flag = False
+        count_iter += 1
+        count += 1
+        print(l_param[0], l_param[1], 'gradient_step', table_ind)
+    return l_param[0], l_param[1]
