@@ -13,6 +13,7 @@ from .views import (
     calculations,
     create_table,
     delete_table,
+    profile
 )
 
 urlpatterns = [
@@ -21,6 +22,7 @@ urlpatterns = [
     path('login/', login_user, name='login'),
     path('logout/', logout_user, name='logout'),
     path('databases/', databases, name='databases'),
+    path('profile/', profile, name='profile'),
     path('graphs/', graph_view, name='graphs'),
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),

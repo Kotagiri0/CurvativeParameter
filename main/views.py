@@ -10,9 +10,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from .forms import RegisterForm, LoginForm, GraphForm
 from .models import Point, Table
-
+from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
-
+from .forms import LoginForm
 param_a, param_b = 0, 0
 
 def graph_view(request):
@@ -78,6 +78,20 @@ def databases(request):
     tables = Table.objects.all()
     context = {"tables": tables}
     return render(request, "databases.html", context)
+
+def profile(request):
+    if request.method == 'POST':
+        context = {
+            'username': request.user.username,
+            'message': request.user.password
+        }
+        return JsonResponse(context)
+    else:
+        context = {
+            'username': request.user.username,
+            'message': request.user.password
+        }
+        return JsonResponse(context)
 
 def calculations(request):
     tables = Table.objects.all()
