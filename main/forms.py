@@ -13,3 +13,12 @@ class LoginForm(AuthenticationForm):
         model = User
         fields = ['username', 'password']
 
+
+class GraphForm(forms.Form):
+    table_choice = forms.ChoiceField(label='Выберите таблицу', choices=[])
+    parameter_a = forms.FloatField(label='Параметр A')
+    parameter_b = forms.FloatField(label='Параметр B')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['table_choice'].choices = [(t.id, 'Таблица '+ str(t.id)) for t in Table.objects.all()]

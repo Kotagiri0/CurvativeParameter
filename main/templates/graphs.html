@@ -4,5 +4,21 @@
 
 {% block content %}
 <h1>Отображение графиков</h1>
-<p>На этой странице будут строиться графики.</p>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Построить график</button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            {% if graphic %}
+            <img src="data:image/png;base64,{{ graphic }}" alt="График"/>
+            {% endif %}
+        </div>
+        <p>Параметры прошлого запуска: a={{ a }}, b={{ b }}</p>
+    </div>
+</div>
 {% endblock %}
