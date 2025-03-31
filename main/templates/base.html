@@ -5,15 +5,38 @@
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
     <style>
+        :root {
+
+            --background-color: #fffff;
+            --text-color: #000000;
+            --header-bg: #4197DE;
+            --link-color: #ffffff;
+            --link-hover: #e0e0e0;
+            --icon-color: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            /* Темная тема */
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+            --header-bg: #2c3e50;
+            --link-color: #bdc3c7;
+            --link-hover: #3498db;
+            --icon-color: #bdc3c7;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
 
         header {
-            background-color: #4197DE;
-            color: white;
+            background-color: var(--header-bg);
+            color: var(--text-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -22,12 +45,13 @@
 
         header a {
             text-decoration: none;
-            color: white;
+            color: var(--link-color) !important; /* Увеличиваем приоритет для ссылок в шапке */
             margin-left: 20px;
         }
 
         header a:hover {
             text-decoration: underline;
+            color: var(--link-hover) !important; /* Убеждаемся, что hover тоже работает */
         }
 
         .logo {
@@ -38,24 +62,68 @@
         .icon {
             margin-right: 5px;
             vertical-align: middle;
+            color: var(--icon-color);
+        }
+
+        header .icon {
+            color: var(--icon-color) !important; /* Убеждаемся, что иконки в шапке видны */
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--link-color);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .theme-toggle .icon {
+            color: var(--icon-color);
         }
     </style>
 </head>
 
 <header>
     <div class="logo">
-        <a href="{% url 'home' %}"><i class="fas fa-atom atom-icon"></i></a>
+        <a href="{% url 'home' %}"><i class="fas fa-atom icon"></i></a>
     </div>
     <nav>
-
         <a href="{% url 'databases' %}"><i class="fa-solid fa-table icon"></i> Базы данных</a>
         <a href="{% url 'graphs' %}"><i class="fa-solid fa-chart-line icon"></i> Графики</a>
         <a href="{% url 'calculations' %}"><i class="fa-solid fa-calculator icon"></i> Расчеты</a>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <i class="fas fa-moon icon"></i>
+        </button>
     </nav>
 </header>
 
 <body>
 {% block content %}
 {% endblock %}
+
+<script>
+    function toggleTheme() {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute("data-theme");
+        if (currentTheme === "dark") {
+            html.removeAttribute("data-theme");
+            localStorage.setItem("theme", "light");
+            document.querySelector(".theme-toggle i").className = "fas fa-moon icon";
+        } else {
+            html.setAttribute("data-theme", "dark");
+            localStorage.setItem("theme", "dark");
+            document.querySelector(".theme-toggle i").className = "fas fa-sun icon";
+        }
+    }
+
+    // Проверка сохраненной темы при загрузке
+    window.onload = () => {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            document.documentElement.setAttribute("data-theme", "dark");
+            document.querySelector(".theme-toggle i").className = "fas fa-sun icon";
+        }
+    };
+</script>
 </body>
 </html>

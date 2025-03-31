@@ -3,8 +3,6 @@
 {% block title %}Вход{% endblock %}
 
 {% block content %}
-<style> a { text-decoration: none; color: #4197DE; } .container { max-width: 400px; margin: 50px auto; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 5px; background-color: #fff; text-align: center; } h1 { margin-bottom: 20px; } input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; } button { width: 100%; padding: 10px; background-color: #4197DE; color: white; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; } button:hover { background-color: #367bc0; } .atom-icon { font-size: 60px; color: #4197DE; margin-bottom: 20px; } </style>
-
 <div class="container">
     <i class="fas fa-atom atom-icon"></i>
     <h1>Вход</h1>
@@ -18,4 +16,89 @@
         Не зарегистрированы? <a href="{% url 'register' %}">Регистрация</a>
     </form>
 </div>
+
+<style>
+    :root {
+        --container-bg: #fff;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --input-border: #ccc;
+        --button-bg: #4197DE;
+        --button-hover: #367bc0;
+        --link-color: #4197DE;
+        --link-hover: #2980b9;
+        --icon-color: #4197DE;
+    }
+
+    [data-theme="dark"] {
+        --container-bg: #2c3e50;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+        --input-border: #4a6278;
+        --button-bg: #3498db;
+        --button-hover: #2980b9;
+        --link-color: #bdc3c7;
+        --link-hover: #3498db;
+        --icon-color: #bdc3c7;
+    }
+
+    .container {
+        max-width: 400px;
+        margin: 70px auto 50px auto; /* Отступ сверху для фиксированной шапки */
+        padding: 20px;
+        box-shadow: 0 0 10px var(--shadow-color);
+        border-radius: 5px;
+        background-color: var(--container-bg);
+        text-align: center;
+        color: var(--text-color); /* Наследуем цвет текста из base.html */
+        transition: all 0.3s ease;
+    }
+
+    h1 {
+        margin-bottom: 20px;
+        color: var(--text-color);
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid var(--input-border);
+        border-radius: 5px;
+        box-sizing: border-box;
+        background-color: var(--container-bg); /* Фон поля ввода совпадает с контейнером */
+        color: var(--text-color);
+        transition: all 0.3s ease;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--button-bg);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: var(--button-hover);
+    }
+
+    .container a {
+        text-decoration: none;
+        color: var(--link-color);
+        transition: color 0.3s ease;
+    }
+
+    .container a:hover {
+        color: var(--link-hover);
+    }
+
+    .atom-icon {
+        font-size: 60px;
+        color: var(--icon-color);
+        margin-bottom: 20px;
+        transition: color 0.3s ease;
+    }
+</style>
 {% endblock %}

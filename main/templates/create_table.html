@@ -29,19 +29,42 @@ T;T</textarea>
     </form>
 </div>
 
-
 <style>
+    :root {
+        --container-bg: #fff;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+        --textarea-bg: #D9D9D9;
+        --note-bg: #f2f2f2;
+        --note-border: #ccc;
+        --button-bg: #4197DE;
+        --button-hover: #2980b9;
+    }
+
+    [data-theme="dark"] {
+        --container-bg: #2c3e50;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+        --textarea-bg: #34495e;
+        --note-bg: #34495e;
+        --note-border: #4a6278;
+        --button-bg: #3498db;
+        --button-hover: #2980b9;
+    }
+
     .container {
         max-width: 800px;
         text-align: center;
-        background-color: #fff;
+        background-color: var(--container-bg);
         padding: 30px;
         border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 10px var(--shadow-color);
+        color: var(--text-color); /* Наследуем цвет текста из base.html */
+        margin: 70px auto 50px auto; /* Отступ сверху для фиксированной шапки */
+        transition: all 0.3s ease;
     }
 
     h1 {
         margin-top: 0;
+        color: var(--text-color);
     }
 
     form {
@@ -52,31 +75,40 @@ T;T</textarea>
     }
 
     textarea {
-        background-color: #D9D9D9;
+        background-color: var(--textarea-bg);
         border: none;
         padding: 10px;
         width: 100%;
         box-sizing: border-box;
         resize: none;
         height: 250px;
+        color: var(--text-color); /* Цвет текста в textarea */
+        transition: background-color 0.3s ease;
     }
 
     .note {
-        background-color: #f2f2f2;
+        background-color: var(--note-bg);
         padding: 10px;
         border-radius: 5px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--note-border);
         height: fit-content;
+        color: var(--text-color); /* Цвет текста в заметке */
+        transition: all 0.3s ease;
     }
 
     button {
-        background-color: #4197DE;
+        background-color: var(--button-bg);
         color: white;
         padding: 10px 15px;
         border: none;
         cursor: pointer;
         grid-column: 1 / span 2;
         margin-top: 20px;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: var(--button-hover);
     }
 </style>
 

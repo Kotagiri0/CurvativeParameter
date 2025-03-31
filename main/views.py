@@ -78,20 +78,22 @@ def databases(request):
     tables = Table.objects.all()
     context = {"tables": tables}
     return render(request, "databases.html", context)
+
 @login_required
 def profile(request):
     if request.method == 'POST':
         context = {
             'username': request.user.username,
-            'message': request.user.password
+            'password': request.user.password
         }
         return JsonResponse(context)
     else:
         context = {
             'username': request.user.username,
-            'message': request.user.password
+            'password': request.user.password
         }
         return JsonResponse(context)
+
 @login_required
 def calculations(request):
     tables = Table.objects.all()
