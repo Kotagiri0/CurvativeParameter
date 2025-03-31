@@ -14,7 +14,7 @@ from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
 param_a, param_b = 0, 0
-
+@login_required
 def graph_view(request):
     form = GraphForm()
     if request.method == 'POST':
@@ -73,12 +73,12 @@ def graph_view(request):
     print("Контекст", context)
     return render(request, 'graphs.html', context)
 
-
+@login_required
 def databases(request):
     tables = Table.objects.all()
     context = {"tables": tables}
     return render(request, "databases.html", context)
-
+@login_required
 def profile(request):
     if request.method == 'POST':
         context = {
@@ -92,7 +92,7 @@ def profile(request):
             'message': request.user.password
         }
         return JsonResponse(context)
-
+@login_required
 def calculations(request):
     tables = Table.objects.all()
     if request.method == 'POST':
@@ -131,7 +131,7 @@ def calculations(request):
     print(f"Контекст:{context}")
 
     return render(request, 'calculations.html', context)
-
+@login_required
 def home_page(request):
     return render(request, 'index.html')
 
@@ -159,7 +159,7 @@ def login_user(request):
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
-
+@login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
@@ -180,7 +180,7 @@ def delete_table(request, pk):
         table.delete()
         return redirect('databases')
     return redirect('databases')
-
+@login_required
 def create_table(request):
     if request.method == 'POST':
         data = request.POST.get('data')
