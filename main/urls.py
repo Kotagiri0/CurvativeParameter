@@ -1,9 +1,8 @@
 from django.urls import path, include
-
 from django.conf import settings
 from django.conf.urls.static import static
 
-from .views import (
+from main.views import (
     home_page,
     register,
     login_user,
@@ -27,4 +26,4 @@ urlpatterns = [
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),
     path('delete-table/<int:pk>/', delete_table, name='delete_table'),
-              ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
