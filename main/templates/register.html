@@ -8,14 +8,45 @@
     <h1>Регистрация</h1>
     <form method="post" novalidate>
         {% csrf_token %}
-        <input type="text" id="username" name="username" placeholder="Имя пользователя" required>
 
-        <input type="password" id="password1" name="password1" placeholder="Пароль" required>
+        <div>
 
-        <input type="password" id="password2" name="password2" placeholder="Повторите пароль" required>
+            <input type="text" id="username" name="username" placeholder="Имя пользователя" required>
+            {% if form.username.errors %}
+                <ul class="error-list">
+                    {% for error in form.username.errors %}
+                        <li class="error">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        <div>
+
+            <input type="password" id="password1" name="password1" placeholder="Пароль" required>
+            {% if form.password1.errors %}
+                <ul class="error-list">
+                    {% for error in form.password1.errors %}
+                        <li class="error">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        <div>
+
+            <input type="password" id="password2" name="password2" placeholder="Повторите пароль" required>
+            {% if form.password2.errors %}
+                <ul class="error-list">
+                    {% for error in form.password2.errors %}
+                        <li class="error">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
 
         <button type="submit">Зарегистрироваться</button>
-        Зарегистрированы? <a href="{% url 'login' %}">Вход</a>
+        Уже зарегистрированы? <a href="{% url 'login' %}">Вход</a>
     </form>
 </div>
 
@@ -29,6 +60,9 @@
         --link-color: #003153;
         --link-hover: #2980b9;
         --icon-color: #003153;
+        --label-color: #333; /* Цвет текста для label */
+        --error-color: #e74c3c; /* Цвет ошибки */
+        --help-color: #7f8c8d; /* Цвет для пояснений */
     }
 
     [data-theme="dark"] {
@@ -40,6 +74,7 @@
         --link-color: #bdc3c7;
         --link-hover: #3498db;
         --icon-color: #bdc3c7;
+        --label-color: #bdc3c7; /* Цвет label в темной теме */
     }
 
     .container {
@@ -57,6 +92,13 @@
     h1 {
         margin-bottom: 20px;
         color: var(--text-color);
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--label-color); /* Цвет текста для label */
+        font-weight: bold;
     }
 
     input {
@@ -95,12 +137,22 @@
     .container a:hover {
         color: var(--link-hover);
     }
-
     .atom-icon {
         font-size: 60px;
         color: var(--icon-color);
         margin-bottom: 20px;
         transition: color 0.3s ease;
+    }
+
+    .error-list {
+        color: var(--error-color);
+        list-style-type: none;
+        padding: 0;
+        margin-top: 5px;
+    }
+
+    .error {
+        font-size: 0.9em;
     }
 </style>
 
