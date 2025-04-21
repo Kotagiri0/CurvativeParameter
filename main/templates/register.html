@@ -3,8 +3,7 @@
 {% block title %}Регистрация{% endblock %}
 
 {% block content %}
-<div class="container">
-    <i class="fas fa-atom atom-icon"></i>
+<div class="centered-content">
     <h1>Регистрация</h1>
     <form method="post" novalidate>
         {% csrf_token %}
@@ -14,64 +13,74 @@
 
         <input type="password" id="password2" name="password2" placeholder="Повторите пароль" required>
 
-        <button type="submit">Зарегистрироваться</button>
-        Зарегистрированы? <a href="{% url 'login' %}">Вход</a>
+        <button type="submit" class="submit-btn"><i class="fas fa-user-plus icon"></i> Зарегистрироваться</button>
+
+        <p>Уже зарегистрированы? <a href="{% url 'login' %}" class="txt">Войти</a></p>
     </form>
 </div>
 
 <style>
     :root {
-        --container-bg: #fff;
-        --shadow-color: rgba(0, 0, 0, 0.1);
+        --block-bg: #f5f6fa;
+        --border-color: #dfe4ea;
+        --text-color: #2c3e50;
         --input-border: #ccc;
         --button-bg: #4197DE;
-        --button-hover: #367bc0;
+        --button-hover: #2980b9;
+        --link-color: #ffffff;
+        --link-hover: #2980b9;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+    }
+    .txt{
         --link-color: #003153;
         --link-hover: #2980b9;
-        --icon-color: #003153;
     }
 
     [data-theme="dark"] {
-        --container-bg: #2c3e50;
-        --shadow-color: rgba(0, 0, 0, 0.5);
+        --block-bg: #2c3e50;
+        --border-color: #4a6278;
+        --text-color: #bdc3c7;
         --input-border: #4a6278;
         --button-bg: #3498db;
         --button-hover: #2980b9;
         --link-color: #bdc3c7;
         --link-hover: #3498db;
-        --icon-color: #bdc3c7;
+        --shadow-color: rgba(0, 0, 0, 0.5);
     }
-
-    .container {
-        max-width: 400px;
-        margin: 70px auto 50px auto; /* Отступ сверху для фиксированной шапки */
-        padding: 20px;
+    [data-theme="dark"] .txt{
+    --link-color: #ffffff;
+    --link-hover: #3498db;
+    }
+    .centered-content {
+        max-width: 500px;
+        margin: 60px auto;
+        background-color: var(--block-bg);
+        padding: 30px;
+        border-radius: 10px;
         box-shadow: 0 0 10px var(--shadow-color);
-        border-radius: 5px;
-        background-color: var(--container-bg);
         text-align: center;
-        color: var(--text-color); /* Наследуем цвет текста из base.html */
-        transition: all 0.3s ease;
-    }
-
-    h1 {
-        margin-bottom: 20px;
         color: var(--text-color);
     }
 
-    input {
+    .centered-content h1 {
+        margin-bottom: 20px;
+        font-size: 2em;
+        font-weight: bold;
+        color: var(--text-color);
+    }
+
+    form input {
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         margin-bottom: 15px;
         border: 1px solid var(--input-border);
         border-radius: 5px;
-        box-sizing: border-box;
-        background-color: var(--container-bg); /* Фон поля ввода совпадает с контейнером */
+        background-color: var(--block-bg);
         color: var(--text-color);
-        transition: all 0.3s ease;
+        box-sizing: border-box;
     }
 
-    button {
+    .submit-btn {
         width: 100%;
         padding: 10px;
         background-color: var(--button-bg);
@@ -79,29 +88,35 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        font-size: 1em;
         transition: background-color 0.3s ease;
     }
 
-    button:hover {
+    .submit-btn:hover {
         background-color: var(--button-hover);
     }
 
-    .container a {
+    .icon {
+        margin-right: 5px;
+        vertical-align: middle;
+        color: white;
+    }
+
+    .centered-content a {
         text-decoration: none;
         color: var(--link-color);
         transition: color 0.3s ease;
     }
 
-    .container a:hover {
+    .centered-content a:hover {
         color: var(--link-hover);
     }
 
-    .atom-icon {
-        font-size: 60px;
-        color: var(--icon-color);
-        margin-bottom: 20px;
-        transition: color 0.3s ease;
+    .centered-content p {
+        margin-top: 15px;
+        font-size: 1em;
+        color: var(--text-color);
+        opacity: 0.8;
     }
 </style>
-
 {% endblock %}

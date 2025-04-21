@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
 param_a, param_b = 0, 0
+
 @login_required
 def graph_view(request):
     form = GraphForm()
@@ -187,15 +188,14 @@ def create_table(request):
     if request.method == 'POST':
         data = request.POST.get('data')
         rows = data.strip().split('\n')
-        temperature = float(rows[-1].split(';')[0])
-
-        table = Table.objects.create(temperature=temperature)
-
-        for row in rows[:-1]:
+        temperature = float(rows[-1])
+        title = rows[0]
+        solution = rows[1]
+        table = Table.objects.create(temperature=temperature, title=title, solution=solution)
+        for row in rows[2:-1]:
             x_value, y_value = map(float, row.split(';'))
             point = Point.objects.create(x_value=x_value, y_value=y_value)
             table.points.add(point)
-
         return HttpResponseRedirect('/databases/')
 
     return render(request, 'create_table.html')

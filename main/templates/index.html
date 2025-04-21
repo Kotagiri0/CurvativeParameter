@@ -1,14 +1,375 @@
 {% extends 'base.html' %}
 
-{% block title %}Главная страница{% endblock %}
+{% block title %}Термодинамическое моделирование | CurvatureParameter{% endblock %}
 
 {% block content %}
-<h1>Добро пожаловать!</h1>
-{% if user.is_authenticated %}
-<p>Вы вошли как {{ user.username }}.</p>
-<a href="{% url 'logout' %}">Выйти</a>
-{% else %}
-<a href="{% url 'register' %}">Зарегистрироваться</a>
-<a href="{% url 'login' %}">Войти</a>
-{% endif %}
+<!-- Главный баннер -->
+<section class="cp-hero">
+  <div class="cp-hero-content">
+    <h1>
+      <span class="cp-gradient-text">Моделирование</span>
+      <span class="cp-pulse">термодинамических параметров</span>
+    </h1>
+    <p>Численные методы для анализа бинарных растворов неэлектролитов</p>
+    <div class="cp-hero-buttons">
+      {% if user.is_authenticated %}
+        <a href="{% url 'calculations' %}" class="cp-btn cp-btn-primary">
+          <i class="fas fa-rocket"></i> Начать расчёты
+        </a>
+      {% else %}
+        <a href="{% url 'login' %}" class="cp-btn cp-btn-primary">
+          <i class="fas fa-sign-in-alt"></i> Войти
+        </a>
+        <a href="{% url 'register' %}" class="cp-btn cp-btn-outline">
+          <i class="fas fa-user-plus"></i> Регистрация
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="cp-hero-visual">
+    <i class="fas fa-atom cp-hero-icon"></i>
+  </div>
+</section>
+
+<!-- Теория -->
+<section class="cp-section">
+  <h2><i class="fas fa-book-open"></i> Теоретическая основа</h2>
+  <div class="cp-theory-card">
+    <p>
+      Для бинарных растворов неэлектролитов ключевым параметром является <strong>избыточная энергия Гиббса (G<sup>E</sup>)</strong>,
+      описывающая отклонение от идеального поведения.
+    </p>
+    <div class="cp-formula">
+      G<sup>E</sup> = RT (x<sub>1</sub> ln γ<sub>1</sub> + x<sub>2</sub> ln γ<sub>2</sub>)
+    </div>
+    <p>
+      Численные методы позволяют определить параметры моделей (Margules, Van Laar, NRTL)
+      на основе экспериментальных данных.
+    </p>
+  </div>
+</section>
+
+<!-- Методы -->
+<section class="cp-section">
+  <h2><i class="fas fa-cogs"></i> Методы оптимизации</h2>
+  <div class="cp-methods-grid">
+    <!-- Метод Гаусса -->
+    <div class="cp-method-card">
+      <div class="cp-method-icon">
+        <i class="fas fa-calculator"></i>
+      </div>
+      <h3>Метод Гаусса</h3>
+      <p>Классический численный метод для параметризации моделей равновесия.</p>
+      <span class="cp-method-tag">Параметризация Гиббса</span>
+    </div>
+
+    <!-- Остальные методы -->
+    <div class="cp-method-card">
+      <div class="cp-method-icon">
+        <i class="fas fa-sliders-h"></i>
+      </div>
+      <h3>Метод Гаусса с переменным шагом</h3>
+      <p>Адаптивный шаг для сложных моделей. Устраняет расходимость.</p>
+      <span class="cp-method-tag">Адаптация параметров</span>
+    </div>
+
+    <div class="cp-method-card">
+      <div class="cp-method-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <h3>Градиентный спуск</h3>
+      <p>Минимизация функции отклонения через градиент.</p>
+      <span class="cp-method-tag">Минимизация MSE</span>
+    </div>
+
+    <div class="cp-method-card">
+      <div class="cp-method-icon">
+        <i class="fas fa-tachometer-alt"></i>
+      </div>
+      <h3>Градиентный спуск с переменным шагом</h3>
+      <p>Динамический шаг для негладких минимумов.</p>
+      <span class="cp-method-tag">Динамический шаг</span>
+    </div>
+
+    <div class="cp-method-card">
+      <div class="cp-method-icon">
+        <i class="fas fa-fire"></i>
+      </div>
+      <h3>Метод отжига</h3>
+      <p>Стохастический поиск глобального минимума.</p>
+      <span class="cp-method-tag">Глобальный поиск</span>
+    </div>
+  </div>
+</section>
+
+<!-- Пример с графиком -->
+<section class="cp-section">
+  <h2><i class="fas fa-flask"></i> Пример расчёта</h2>
+  <div class="cp-example-card">
+    <p>
+      Параметры модели NRTL для системы <strong>этанол-вода</strong> (25°C):
+    </p>
+    <div class="cp-results">
+      <div>
+        <span>Δg<sub>12</sub> (J/mol):</span>
+        <strong>−529.3 ± 12.7</strong>
+      </div>
+      <div>
+        <span>Δg<sub>21</sub> (J/mol):</span>
+        <strong>1024.6 ± 18.2</strong>
+      </div>
+    </div>
+    <div class="cp-graph-container">
+      <canvas id="cp-convergence-chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- Литература -->
+<section class="cp-section">
+  <h2><i class="fas fa-graduation-cap"></i> Рекомендуемая литература</h2>
+  <div class="cp-literature-card">
+    <ul class="cp-literature-list">
+      <li>
+        <i class="fas fa-book"></i>
+        <a href="#" target="_blank">Prausnitz J.M. "Molecular Thermodynamics of Fluid-Phase Equilibria"</a>
+      </li>
+      <li>
+        <i class="fas fa-file-alt"></i>
+        <a href="#" target="_blank">Smith J.M. "Introduction to Chemical Engineering Thermodynamics"</a>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- Подключаем Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // График сходимости
+  const ctx = document.getElementById('cp-convergence-chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['1', '5', '10', '20', '50', '100'],
+      datasets: [{
+        label: 'Ошибка модели (%)',
+        data: [12.5, 5.3, 2.8, 1.7, 1.2, 1.1],
+        borderColor: '#4197DE',
+        tension: 0.3,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      }
+    }
+  });
+</script>
+
+<style>
+  /* Основные стили */
+  :root {
+    --accent-color: #4197DE; /* Для светлой темы */
+    --tag-bg: rgba(65, 151, 222, 0.2);
+    --tag-color: #4197DE;
+  }
+
+  [data-theme="dark"] {
+    --accent-color: #66b3ff; /* Более яркий для тёмной темы */
+    --tag-bg: rgba(100, 181, 255, 0.3);
+    --tag-color: #e6f3ff;
+  }
+
+  .cp-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 5%;
+    background: var(--background-color);
+    border-radius: 10px;
+    margin: 20px auto;
+    max-width: 1200px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .cp-hero-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    color: var(--text-color);
+  }
+
+  .cp-gradient-text {
+    background: linear-gradient(45deg, var(--accent-color), #2ecc71);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .cp-pulse {
+    display: inline-block;
+    animation: cp-pulse-animation 2s infinite;
+  }
+
+  .cp-hero-visual {
+    font-size: 6rem;
+    color: var(--accent-color);
+    animation: cp-spin 15s linear infinite;
+  }
+
+  .cp-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 5%;
+  }
+
+  .cp-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-color);
+  }
+
+  /* Карточки */
+  .cp-theory-card,
+  .cp-example-card,
+  .cp-literature-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-theory-card,
+  [data-theme="dark"] .cp-example-card,
+  [data-theme="dark"] .cp-literature-card {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Методы */
+  .cp-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+
+  .cp-method-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  [data-theme="dark"] .cp-method-card {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-method-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .cp-method-icon {
+    font-size: 2rem;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+  }
+
+  .cp-method-tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--tag-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin-top: 10px;
+  }
+
+  /* График */
+  .cp-graph-container {
+    margin-top: 20px;
+    height: 300px;
+  }
+
+  /* Литература */
+  .cp-literature-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .cp-literature-list li {
+    margin-bottom: 15px;
+  }
+
+  .cp-literature-list a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .cp-literature-list a:hover {
+    color: var(--link-hover);
+  }
+
+  /* Кнопки */
+  .cp-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .cp-btn-primary {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+  }
+
+  .cp-btn-outline {
+    border: 2px solid var(--accent-color);
+    color: var(--accent-color);
+    background: transparent;
+  }
+
+  /* Анимации */
+  @keyframes cp-pulse-animation {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes cp-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    .cp-hero {
+      flex-direction: column;
+      text-align: center;
+    }
+    .cp-hero-visual {
+      margin-top: 30px;
+      font-size: 4rem;
+    }
+  }
+</style>
 {% endblock %}

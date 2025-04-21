@@ -1,40 +1,349 @@
 {% extends 'base.html' %}
 
-{% block title %}Расчеты{% endblock %}
+{% block title %}Расчёты{% endblock %}
+
 {% block content %}
-<body>
-    <h1>Выбор алгоритма оптимизации</h1>
-    <form id="algoForm" method="post">
+<section class="cp-section">
+  <h2><i class="fas fa-calculator" style="color: var(--accent-color);"></i> Выбор алгоритма оптимизации</h2>
+
+  <div class="cp-calculations-grid">
+    <!-- Форма -->
+    <div class="cp-calc-card">
+      <h3>Настройки алгоритма</h3>
+      <form id="algoForm" method="post" class="cp-form">
         {% csrf_token %}
-        <label for="algorithm">Выберите алгоритм:</label>
-        <select id="algorithm" name="algorithm">
-            <option value="gauss">Метод Гаусса</option>
-            <option value="gauss_step">Метод Гаусса с переменным шагом</option>
-            <option value="gradient">Градиентный спуск</option>
-            <option value="gradient_step">Шаговый градиентный спуск</option>
-            <option value="otzhig">Отжиг (simulated annealing)</option>
-        </select>
-        <div class="table-container">
+        <div class="cp-form-content">
+          <!-- Выбор алгоритма -->
+          <div class="cp-form-group">
+            <label for="algorithm">Выберите алгоритм:</label>
+            <select id="algorithm" name="algorithm">
+              <option value="gauss">Метод Гаусса</option>
+              <option value="gauss_step">Метод Гаусса с переменным шагом</option>
+              <option value="gradient">Градиентный спуск</option>
+              <option value="gradient_step">Шаговый градиентный спуск</option>
+              <option value="otzhig">Отжиг (simulated annealing)</option>
+            </select>
+          </div>
+          <!-- Выбор таблицы -->
+          <div class="cp-form-group">
             <label for="tabledata">Выберите таблицу:</label>
             <select id="tabledata" name="tabledata">
-                {% for table in tables %}
-                    <option value={{forloop.counter}}>Таблица {{ forloop.counter }}</option>
-                {% endfor %}
+              {% for table in tables %}
+                <option value="{{ forloop.counter }}">Таблица {{ table.title }}</option>
+              {% endfor %}
             </select>
+          </div>
         </div>
-        <button type="submit">Выполнить</button>
-    </form>
-    {% if a and b %}
-        <p>Параметры метода Гаусса: a={{ a }}, b={{ b }}</p>
-    {% elif c and d %}
-        <p>Параметры метода Гаусса с переменным шагом: a={{ c }}, b={{ d }}</p>
-    {% elif e and f %}
-        <p>Параметры градиентного спуска: a={{ e }}, b={{ f }}</p>
-    {% elif g and h %}
-        <p>Параметры градиентоного спуска с переменным шагом: a={{ g }}, b={{ h }}</p>
-    {% elif i and j %}
-        <p>Параметры отжига: a={{ i }}, b={{ j }}</p>
-    {% endif %}
+        <button type="submit" class="cp-btn cp-btn-primary">
+          <i class="fas fa-rocket"></i> Выполнить
+        </button>
+      </form>
+    </div>
 
-</body>
+    <!-- Параметры -->
+    {% if a and b or c and d or e and f or g and h or i and j %}
+      <div class="cp-calc-card">
+        <h3>Результаты оптимизации</h3>
+        <div class="cp-params-tags">
+          {% if a and b %}
+            <span class="cp-table-tag">Метод: Гаусс</span>
+            <span class="cp-table-tag">a = {{ a }}</span>
+            <span class="cp-table-tag">b = {{ b }}</span>
+          {% elif c and d %}
+            <span class="cp-table-tag">Метод: Гаусс с переменным шагом</span>
+            <span class="cp-table-tag">a = {{ c }}</span>
+            <span class="cp-table-tag">b = {{ d }}</span>
+          {% elif e and f %}
+            <span class="cp-table-tag">Метод: Градиентный спуск</span>
+            <span class="cp-table-tag">a = {{ e }}</span>
+            <span class="cp-table-tag">b = {{ f }}</span>
+          {% elif g and h %}
+            <span class="cp-table-tag">Метод: Шаговый градиентный спуск</span>
+            <span class="cp-table-tag">a = {{ g }}</span>
+            <span class="cp-table-tag">b = {{ h }}</span>
+          {% elif i and j %}
+            <span class="cp-table-tag">Метод: Отжиг</span>
+            <span class="cp-table-tag">a = {{ i }}</span>
+            <span class="cp-table-tag">b = {{ j }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Оверлей с гифкой загрузки -->
+  <div class="cp-loading-overlay" id="loadingOverlay">
+    <img src="https://example.com/penguin-whip.gif" alt="Пингвинчик получает плетью" class="cp-loading-gif" />
+  </div>
+</section>
+
+<style>
+  /* Основные стили */
+  .cp-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 5%;
+  }
+
+  .cp-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-color);
+    animation: fadeSlideIn 0.7s ease-out;
+  }
+
+  /* Сетка карточек */
+  .cp-calculations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+  }
+
+  /* Карточка */
+  .cp-calc-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeSlideIn 0.5s ease-out;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-calc-card {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-calc-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px var(--shadow-color, rgba(0, 0, 0, 0.2));
+  }
+
+  .cp-calc-card h3 {
+    margin: 0 0 15px;
+    font-size: 1.3rem;
+    color: var(--accent-color);
+  }
+
+  /* Форма */
+  .cp-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cp-form-content {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  .cp-form-group {
+    margin-bottom: 20px;
+  }
+
+  .cp-form-group label {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  .cp-form-group select {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-color);
+    transition: border-color 0.3s ease, background 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-form-group select {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.7);
+    color: var(--tag-color);
+  }
+
+  .cp-form-group select:focus {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+  }
+
+  [data-theme="dark"] .cp-form-group select:focus {
+    background: rgba(50, 50, 50, 0.7);
+  }
+
+  .cp-form-group select option {
+    background: var(--background-color);
+    color: var(--text-color);
+  }
+
+  [data-theme="dark"] .cp-form-group select option {
+    background: rgba(30, 30, 30, 0.9);
+    color: var(--tag-color);
+  }
+
+  /* Кнопка */
+  .cp-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .cp-btn-primary {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    width: 100%;
+  }
+
+  .cp-btn-primary:hover {
+    background: #2980b9;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-btn-primary i {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-btn-primary:hover i {
+    transform: scale(1.2);
+  }
+
+  /* Параметры */
+  .cp-params-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+  }
+
+  .cp-table-tag {
+    background: var(--tag-bg);
+    color: var(--tag-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+  }
+
+  .cp-table-tag:hover {
+    transform: scale(1.1);
+  }
+
+  /* Оверлей загрузки */
+  .cp-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .cp-loading-overlay.active {
+    display: flex;
+  }
+
+  .cp-loading-gif {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 10px;
+  }
+
+  /* Анимации */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Адаптивность */
+  @media (max-width: 992px) {
+    .cp-calculations-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cp-section {
+      padding: 0 3%;
+      margin: 20px auto;
+    }
+
+    .cp-calc-card {
+      padding: 15px;
+    }
+
+    .cp-calc-card h3 {
+      font-size: 1.2rem;
+    }
+
+    .cp-form-content {
+      padding: 0 5px;
+    }
+
+    .cp-form-group select {
+      font-size: 0.85rem;
+      padding: 8px 10px;
+    }
+
+    .cp-btn-primary {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+
+    .cp-table-tag {
+      font-size: 0.85rem;
+      padding: 5px 10px;
+    }
+
+    .cp-loading-gif {
+      max-width: 150px;
+      max-height: 150px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('algoForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    form.addEventListener('submit', (e) => {
+      // Показать оверлей с гифкой
+      loadingOverlay.classList.add('active');
+
+      // Имитация задержки (замени на реальный AJAX-запрос)
+      setTimeout(() => {
+        loadingOverlay.classList.remove('active');
+      }, 5000); // 5 секунд для теста, настрой под сервер
+    });
+  });
+</script>
 {% endblock %}

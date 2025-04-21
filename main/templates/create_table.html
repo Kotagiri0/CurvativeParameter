@@ -1,115 +1,304 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="centered-content">
     <h1>Создание новой таблицы</h1>
 
-    <form method="post" novalidate>
-        <textarea name="data" rows="10">...;...
-...;...
-...;...
-...;...
-...;...
-...;...
-...;...
-...;...
-T;T</textarea>
-
+    <form method="post" novalidate class="form-grid">
         {% csrf_token %}
+        <textarea name="data" id="data-input" placeholder="title
+solution
+x1;y1
+x2;y2
+...
+temperature(K)"></textarea>
 
         <div class="note">
-            Памятка:<br />
-            Вещественные числа пишутся через '.'<br />
-            Данные разделяются символом ';'<br />
-            Данные - точки на графике<br />
-            Последняя строка - продублированная температура в кельвинах (T;T).
+            <strong>Памятка:</strong><br />
+            Вещественные числа пишутся через <code>.</code><br />
+            Данные разделяются символом <code>;</code><br />
+            Первая строка — название таблицы (<code>title</code>)<br />
+            Вторая строка — реакция (<code>solution</code>)<br />
+            Последняя строка — температура в Кельвинах (<code>temperature</code>)
         </div>
 
-        <button type="submit">Создать</button>
+        <button type="submit" class="but">
+            <i class="fas fa-plus icon"></i> Создать таблицу
+        </button>
     </form>
+
+    <button class="toggle-preview-btn but" id="toggle-preview">
+        <span id="arrow">▶</span> Предпросмотр
+    </button>
+
+    <div class="preview-wrapper" id="preview-wrapper">
+        <div id="preview"></div>
+    </div>
 </div>
 
 <style>
-    :root {
-        --container-bg: #fff;
-        --shadow-color: rgba(0, 0, 0, 0.1);
-        --textarea-bg: #D9D9D9;
-        --note-bg: #f2f2f2;
-        --note-border: #ccc;
-        --button-bg: #4197DE;
-        --button-hover: #2980b9;
-    }
-
-    [data-theme="dark"] {
-        --container-bg: #2c3e50;
-        --shadow-color: rgba(0, 0, 0, 0.5);
-        --textarea-bg: #34495e;
-        --note-bg: #34495e;
-        --note-border: #4a6278;
-        --button-bg: #3498db;
-        --button-hover: #2980b9;
-    }
-
-    .container {
-        max-width: 800px;
+    /* Переменные унаследованы из base.html */
+    .centered-content {
+        max-width: 1000px;
+        margin: 50px auto;
         text-align: center;
-        background-color: var(--container-bg);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
         padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px var(--shadow-color);
-        color: var(--text-color); /* Наследуем цвет текста из base.html */
-        margin: 70px auto 50px auto; /* Отступ сверху для фиксированной шапки */
-        transition: all 0.3s ease;
-    }
-
-    h1 {
-        margin-top: 0;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px var(--shadow-color, rgba(0, 0, 0, 0.1));
         color: var(--text-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: fadeSlideIn 0.7s ease-out;
     }
 
-    form {
+    [data-theme="dark"] .centered-content {
+        background: rgba(30, 30, 30, 0.3);
+    }
+
+    .centered-content:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px var(--shadow-color, rgba(0, 0, 0, 0.2));
+    }
+
+    .form-grid {
         display: grid;
         grid-template-columns: 1fr 300px;
         gap: 20px;
-        align-items: start;
+        align-items: flex-start;
+        margin-top: 20px;
     }
 
     textarea {
-        background-color: var(--textarea-bg);
-        border: none;
-        padding: 10px;
+        background-color: #e6ecef;
+        border: 2px solid transparent;
+        padding: 15px;
         width: 100%;
         box-sizing: border-box;
         resize: none;
         height: 250px;
-        color: var(--text-color); /* Цвет текста в textarea */
-        transition: background-color 0.3s ease;
+        color: var(--text-color);
+        font-family: monospace;
+        font-size: 14px;
+        border-radius: 8px;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    [data-theme="dark"] textarea {
+        background-color: var(--tag-bg);
+        color: var(--tag-color);
+    }
+
+    textarea:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 8px var(--accent-color);
+    }
+
+    textarea::placeholder {
+        color: rgba(50, 50, 50, 0.6);
+    }
+
+    [data-theme="dark"] textarea::placeholder {
+        color: rgba(255, 255, 255, 0.6);
     }
 
     .note {
-        background-color: var(--note-bg);
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid var(--note-border);
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color, #dfe4ea);
         height: fit-content;
-        color: var(--text-color); /* Цвет текста в заметке */
-        transition: all 0.3s ease;
+        color: var(--text-color);
+        text-align: left;
+        font-size: 0.9em;
+        transition: background 0.3s ease, border-color 0.3s ease;
     }
 
-    button {
-        background-color: var(--button-bg);
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
+    [data-theme="dark"] .note {
+        background: rgba(30, 30, 30, 0.3);
+        border-color: var(--border-color, #4a6278);
+    }
+
+    .note code {
+        color: var(--accent-color);
+        background: rgba(0, 0, 0, 0.1);
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+
+    .but {
         grid-column: 1 / span 2;
-        margin-top: 20px;
-        transition: background-color 0.3s ease;
+        background-color: var(--accent-color);
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    button:hover {
-        background-color: var(--button-hover);
+    .but:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .icon {
+        font-size: 1.1em;
+        color: white;
+        transition: transform 0.3s ease;
+    }
+
+    .but:hover .icon {
+        transform: scale(1.2);
+    }
+
+    .toggle-preview-btn {
+        margin: 20px auto;
+        background: transparent;
+        color: var(--accent-color);
+        border: 2px solid var(--accent-color);
+        padding: 10px 20px;
+        font-size: 1.1em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .toggle-preview-btn:hover {
+        color: #2980b9;
+        border-color: #2980b9;
+        transform: translateY(-2px);
+    }
+
+    .toggle-preview-btn:focus {
+        outline: none;
+    }
+
+    #arrow {
+        display: inline-block;
+        transition: transform 0.4s ease;
+    }
+
+    .rotated {
+        transform: rotate(90deg);
+    }
+
+    .preview-wrapper {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.5s ease, opacity 0.4s ease, margin-top 0.3s ease;
+        text-align: left;
+        margin-top: 0;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 0;
+        border-radius: 8px;
+    }
+
+    [data-theme="dark"] .preview-wrapper {
+        background: rgba(30, 30, 30, 0.3);
+    }
+
+    .preview-wrapper.visible {
+        max-height: 1000px;
+        opacity: 1;
+        margin-top: 20px;
+        padding: 20px;
+    }
+
+    .preview-wrapper h3 {
+        color: var(--accent-color);
+        margin: 0 0 10px 0;
+    }
+
+    .preview-wrapper p, .preview-wrapper ul {
+        color: var(--text-color);
+        margin: 0 0 10px 0;
+    }
+
+    .preview-wrapper ul {
+        list-style: disc;
+        padding-left: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .centered-content {
+            margin: 20px;
+            padding: 20px;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .but {
+            grid-column: auto;
+        }
+
+        .note {
+            margin-top: 20px;
+        }
     }
 </style>
 
+<script>
+    const textarea = document.getElementById('data-input');
+    const previewDiv = document.getElementById('preview');
+    const previewWrapper = document.getElementById('preview-wrapper');
+    const toggleBtn = document.getElementById('toggle-preview');
+    const arrow = document.getElementById('arrow');
+
+    function updatePreview() {
+        const lines = textarea.value.trim().split('\n');
+        if (!lines[0]) {
+            previewDiv.innerHTML = "<em>Введите данные для предпросмотра</em>";
+            return;
+        }
+        if (lines.length < 3) {
+            previewDiv.innerHTML = "<em>Недостаточно данных для предпросмотра</em>";
+            return;
+        }
+
+        const title = lines[0];
+        const solution = lines[1];
+        const temperature = lines[lines.length - 1];
+        const points = lines.slice(2, -1);
+
+        let html = `<h3>${title}</h3>`;
+        html += `<p><strong>Реакция:</strong> ${solution}</p>`;
+        html += `<p><strong>Температура:</strong> ${temperature}</p>`;
+        html += `<h4>Точки:</h4><ul>`;
+        points.forEach(p => {
+            html += `<li>${p}</li>`;
+        });
+        html += `</ul>`;
+
+        previewDiv.innerHTML = html;
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        const visible = previewWrapper.classList.toggle('visible');
+        arrow.classList.toggle('rotated', visible);
+        if (visible) {
+            updatePreview();
+        }
+    });
+
+    textarea.addEventListener('input', () => {
+        if (previewWrapper.classList.contains('visible')) {
+            updatePreview();
+        }
+    });
+
+    window.addEventListener('DOMContentLoaded', updatePreview);
+</script>
 {% endblock %}

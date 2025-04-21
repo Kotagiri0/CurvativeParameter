@@ -21,4 +21,4 @@ class GraphForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['table_choice'].choices = [(t.id, 'Таблица '+ str(t.id)) for t in Table.objects.all()]
+        self.fields['table_choice'].choices = [(t.id, t.title) for t in Table.objects.all()]

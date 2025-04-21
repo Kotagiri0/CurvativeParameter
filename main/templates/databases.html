@@ -1,169 +1,293 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="centered-content">
-    <h1>Ваши базы данных</h1>
+<section class="cp-section">
+  <h2><i class="fas fa-database" style="color: var(--accent-color);"></i> Ваши базы данных</h2>
 
-    {% if tables %}
-        <div class="table-container">
-            {% for table in tables %}
-                <div class="table-block">
-                    <h2>Таблица {{ forloop.counter }}
-                        <span style="float: right;">
-                            <a href="{% url 'delete_table' table.pk %}" onclick="return confirm('Вы уверены, что хотите удалить эту таблицу?');">
-                                <i class="fas fa-times icon"></i>
-                            </a>
-                        </span>
-                    </h2>
-                    <ul>
-                        {% for point in table.points.all %}
-                            <li>{{ point }}</li>
-                        {% endfor %}
-                        <h5>Температура {{ table.temperature }}К</h5>
-                    </ul>
-                </div>
-            {% endfor %}
+  {% if tables %}
+    <div class="cp-tables-grid">
+      {% for table in tables %}
+        <div class="cp-table-card">
+          <div class="cp-table-header">
+            <h3>{{ table.title }}</h3>
+            <a href="{% url 'delete_table' table.pk %}" class="cp-delete-btn" onclick="return confirm('Вы уверены, что хотите удалить таблицу «{{ table.title }}»?');" title="Удалить таблицу">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+          <div class="cp-table-info">
+            <span class="cp-table-tag">Реакция: {{ table.solution }}</span>
+            <span class="cp-table-tag">Температура: {{ table.temperature }} K</span>
+          </div>
+          <button class="cp-accordion-toggle" onclick="toggleAccordion(this)">
+            <span>Показать данные</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="cp-accordion-content">
+            <ul>
+              {% for point in table.points.all %}
+                <li>{{ point }}</li>
+              {% endfor %}
+            </ul>
+          </div>
         </div>
-    {% else %}
-        <p>У вас пока нет таблиц.</p>
-    {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="cp-empty-state">
+      <i class="fas fa-database cp-empty-icon"></i>
+      <p>У вас пока нет таблиц. Создайте новую, чтобы начать!</p>
+    </div>
+  {% endif %}
 
-    <a href="{% url 'create_table' %}"><button class="create-btn"><i class="fas fa-plus icon"></i> Создать новую таблицу</button></a>
-</div>
+  <a href="{% url 'create_table' %}" class="cp-btn cp-btn-primary">
+    <i class="fas fa-plus"></i> Создать новую таблицу
+  </a>
+</section>
 
 <style>
-    :root {
-        --block-bg: #f5f6fa;
-        --border-color: #dfe4ea;
-        --link-color: #ffffff;
-        --link-hover: #ffffff;
-        --button-bg: #4197DE;
-        --button-hover: #2980b9;
-        --shadow-color: rgba(0, 0, 0, 0.1);
+  /* Основные стили */
+  .cp-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 5%;
+  }
+
+  .cp-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-color);
+  }
+
+  /* Сетка карточек */
+  .cp-tables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  /* Карточка таблицы */
+  .cp-table-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  [data-theme="dark"] .cp-table-card {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-table-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Заголовок карточки */
+  .cp-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .cp-table-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-color);
+  }
+
+  .cp-delete-btn {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: color 0.3s, transform 0.3s;
+  }
+
+  .cp-delete-btn:hover {
+    color: var(--link-hover);
+    transform: scale(1.2);
+  }
+
+  /* Информация о таблице */
+  .cp-table-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .cp-table-tag {
+    background: var(--tag-bg);
+    color: var(--tag-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+
+  /* Кнопка аккордеона */
+  .cp-accordion-toggle {
+    width: 100%;
+    background: var(--accent-color);
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .cp-accordion-toggle:hover {
+    background: var(--link-hover);
+    transform: scale(1.02);
+  }
+
+  .cp-accordion-toggle i {
+    transition: transform 0.3s;
+  }
+
+  .cp-accordion-toggle.open i {
+    transform: rotate(180deg);
+  }
+
+  /* Контент аккордеона */
+  .cp-accordion-content {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease-out, padding 0.3s ease;
+    padding: 0;
+  }
+
+  .cp-accordion-content.open {
+    max-height: 500px;
+    padding: 15px 0;
+    transition: max-height 0.4s ease-in, padding 0.3s ease;
+  }
+
+  .cp-accordion-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cp-accordion-content li {
+    padding: 5px 0;
+    color: var(--text-color);
+    font-size: 0.95rem;
+  }
+
+  /* Пустое состояние */
+  .cp-empty-state {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  [data-theme="dark"] .cp-empty-state {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-empty-icon {
+    font-size: 3rem;
+    color: var(--accent-color);
+    margin-bottom: 20px;
+  }
+
+  .cp-empty-state p {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    opacity: 0.9;
+  }
+
+  /* Кнопка создания таблицы */
+  .cp-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 20px;
+  }
+
+  .cp-btn-primary {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+  }
+
+  .cp-btn-primary:hover {
+    background: var(--link-hover);
+    transform: scale(1.05);
+  }
+
+  /* Анимации */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Адаптивность */
+  @media (max-width: 992px) {
+    .cp-tables-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .cp-tables-grid {
+      grid-template-columns: 1fr;
     }
 
-    [data-theme="dark"] {
-        --block-bg: #2c3e50;
-        --border-color: #4a6278;
-        --link-color: #bdc3c7;
-        --link-hover: #3498db;
-        --button-bg: #3498db;
-        --button-hover: #2980b9;
-        --shadow-color: rgba(0, 0, 0, 0.5);
+    .cp-section {
+      padding: 0 3%;
     }
 
-    .centered-content {
-        max-width: 1200px;
-        margin: 50px auto;
-        text-align: center;
-        background-color: var(--background-color);
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px var(--shadow-color);
-        color: var(--text-color);
-        transition: all 0.3s ease;
+    .cp-table-header h3 {
+      font-size: 1.2rem;
     }
 
-    .centered-content h1 {
-        margin-top: 0;
-        color: var(--text-color);
-        font-size: 2em;
-        font-weight: bold;
+    .cp-btn {
+      width: 100%;
+      justify-content: center;
     }
-
-    .centered-content .table-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 20px;
-    }
-
-    .centered-content .table-block {
-        flex: 0 1 calc(33.333% - 40px);
-        margin-bottom: 20px;
-        border: 1px solid var(--border-color);
-        padding: 15px;
-        box-sizing: border-box;
-        background-color: var(--block-bg);
-        color: var(--text-color);
-        border-radius: 5px;
-        transition: all 0.3s ease;
-    }
-
-    .centered-content .table-block h2 {
-        margin: 0 0 10px 0;
-        font-size: 1.2em;
-    }
-
-    .centered-content ul {
-        list-style-type: none;
-        padding-left: 0;
-        margin: 0;
-    }
-
-    .centered-content ul li {
-        padding: 5px 0;
-    }
-
-    .centered-content h5 {
-        margin: 10px 0 0 0;
-        color: var(--text-color);
-        opacity: 0.9;
-    }
-
-    .centered-content a {
-        text-decoration: none;
-        color: var(--link-color);
-        transition: color 0.3s ease;
-    }
-
-    .centered-content a:hover {
-        color: var(--link-hover);
-    }
-
-    .centered-content .icon {
-        margin-right: 5px;
-        vertical-align: middle;
-        color: var(--link-color);
-    }
-
-    .centered-content .create-btn {
-        background-color: var(--button-bg);
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        margin-top: 20px;
-        font-size: 1em;
-        transition: background-color 0.3s ease;
-    }
-
-    .centered-content .create-btn:hover {
-        background-color: var(--button-hover);
-    }
-
-    .centered-content .create-btn .icon {
-        color: white;
-    }
-
-    .centered-content p {
-        font-size: 1.1em;
-        color: var(--text-color);
-        opacity: 0.8;
-    }
-
-    @media (max-width: 992px) {
-        .centered-content .table-block {
-            flex-basis: calc(50% - 40px);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .centered-content .table-block {
-            flex-basis: 100%;
-        }
-    }
+  }
 </style>
 
+<script>
+  function toggleAccordion(button) {
+    const content = button.nextElementSibling;
+    const icon = button.querySelector('i');
+
+    if (content.classList.contains('open')) {
+      content.classList.remove('open');
+      button.querySelector('span').textContent = 'Показать данные';
+      button.classList.remove('open');
+    } else {
+      content.classList.add('open');
+      button.querySelector('span').textContent = 'Скрыть данные';
+      button.classList.add('open');
+    }
+  }
+</script>
 {% endblock %}

@@ -9,5 +9,7 @@ class Point(models.Model):
         return f"{self.x_value}, {self.y_value}"
 
 class Table(models.Model):
+    title = models.TextField()
+    solution = models.TextField()
     points = models.ManyToManyField(Point, related_name="points")
     temperature = models.FloatField()
