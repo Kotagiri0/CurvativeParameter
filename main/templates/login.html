@@ -3,119 +3,242 @@
 {% block title %}Вход{% endblock %}
 
 {% block content %}
-<div class="centered-content">
-    <h1>Вход</h1>
-    <form method="post" novalidate>
-        {% csrf_token %}
-        <input type="text" id="username" name="username" placeholder="Имя пользователя" required>
-
-        <input type="password" id="password" name="password" placeholder="Пароль" required>
-
-        <button type="submit" class="submit-btn"><i class="fas fa-sign-in-alt icon"></i> Войти</button>
-
-        <p>Нет аккаунта? <a href="{% url 'register' %}" class="txt">Зарегистрироваться</a></p>
+<section class="cp-section">
+  <div class="cp-auth-card">
+    <h2><i class="fas fa-sign-in-alt" style="color: var(--accent-color);"></i> Вход</h2>
+    <form method="post" novalidate class="cp-form">
+      {% csrf_token %}
+      <div class="cp-form-content">
+        {% if form.errors %}
+          <div class="cp-error">
+            {% for field in form %}
+              {% for error in field.errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="cp-form-group">
+          <label for="username"><i class="fas fa-user"></i> Имя пользователя</label>
+          <input type="text" id="username" name="username" placeholder="Введите имя пользователя" required>
+        </div>
+        <div class="cp-form-group">
+          <label for="password"><i class="fas fa-lock"></i> Пароль</label>
+          <input type="password" id="password" name="password" placeholder="Введите пароль" required>
+        </div>
+      </div>
+      <button type="submit" class="cp-btn cp-btn-primary">
+        <i class="fas fa-sign-in-alt"></i> Войти
+      </button>
+      <p class="cp-auth-link">Нет аккаунта? <a href="{% url 'register' %}" class="cp-link">Зарегистрироваться</a></p>
     </form>
-</div>
+  </div>
+</section>
 
 <style>
-    :root {
-        --block-bg: #f5f6fa;
-        --border-color: #dfe4ea;
-        --text-color: #2c3e50;
-        --input-border: #ccc;
-        --button-bg: #4197DE;
-        --button-hover: #2980b9;
-        --link-color: #ffffff;
-        --link-hover: #ffffff;
-        --shadow-color: rgba(0, 0, 0, 0.1);
+  /* Основные стили */
+  .cp-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 5%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .cp-auth-card {
+    max-width: 500px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeSlideIn 0.5s ease-out;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-auth-card {
+    background: rgba(30, 30, 30, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-auth-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px var(--shadow-color, rgba(0, 0, 0, 0.2));
+  }
+
+  .cp-auth-card h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  /* Форма */
+  .cp-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cp-form-content {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  .cp-form-group {
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .cp-form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  .cp-form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-color);
+    transition: border-color 0.3s ease, background 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-form-group input {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.7);
+    color: var(--tag-color);
+  }
+
+  .cp-form-group input:focus {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+  }
+
+  [data-theme="dark"] .cp-form-group input:focus {
+    background: rgba(50, 50, 50, 0.7);
+  }
+
+  /* Кнопка */
+  .cp-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .cp-btn-primary {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    width: 100%;
+  }
+
+  .cp-btn-primary:hover {
+    background: #2980b9;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-btn-primary i {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-btn-primary:hover i {
+    transform: scale(1.2);
+  }
+
+  /* Ссылка */
+  .cp-auth-link {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+  }
+
+  .cp-link {
+    color: var(--tag-color);
+    text-decoration: none;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+  }
+
+  .cp-link:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+  }
+
+  /* Ошибки */
+  .cp-error {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4d4d;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] .cp-error {
+    background: rgba(255, 0, 0, 0.2);
+  }
+
+  /* Анимации */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    .cp-section {
+      padding: 0 3%;
+      margin: 20px auto;
     }
 
-    [data-theme="dark"] {
-        --block-bg: #2c3e50;
-        --border-color: #4a6278;
-        --text-color: #bdc3c7;
-        --input-border: #4a6278;
-        --button-bg: #3498db;
-        --button-hover: #2980b9;
-        --link-color: #bdc3c7;
-        --link-hover: #3498db;
-        --shadow-color: rgba(0, 0, 0, 0.5);
-    }
-    .txt{
-        --link-color: #003153;
-        --link-hover: #2980b9;
-    }
-    [data-theme="dark"] .txt{
-    --link-color: #ffffff;
-    --link-hover: #3498db;
-    }
-    .centered-content {
-        max-width: 500px;
-        margin: 60px auto;
-        background-color: var(--block-bg);
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px var(--shadow-color);
-        text-align: center;
-        color: var(--text-color);
+    .cp-auth-card {
+      padding: 20px;
     }
 
-    .centered-content h1 {
-        margin-bottom: 20px;
-        font-size: 2em;
-        font-weight: bold;
-        color: var(--text-color);
+    .cp-auth-card h2 {
+      font-size: 1.5rem;
     }
 
-    form input {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 15px;
-        border: 1px solid var(--input-border);
-        border-radius: 5px;
-        background-color: var(--block-bg);
-        color: var(--text-color);
-        box-sizing: border-box;
+    .cp-form-group input {
+      font-size: 0.85rem;
+      padding: 8px 10px;
     }
 
-    .submit-btn {
-        width: 100%;
-        padding: 10px;
-        background-color: var(--button-bg);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 1em;
-        transition: background-color 0.3s ease;
+    .cp-btn-primary {
+      padding: 10px 20px;
+      font-size: 0.9rem;
     }
 
-    .submit-btn:hover {
-        background-color: var(--button-hover);
+    .cp-auth-link {
+      font-size: 0.85rem;
     }
-
-    .icon {
-        margin-right: 5px;
-        vertical-align: middle;
-        color: white;
-    }
-
-    .centered-content a {
-        text-decoration: none;
-        color: var(--link-color);
-        transition: color 0.3s ease;
-    }
-
-    .centered-content a:hover {
-        color: var(--link-hover);
-    }
-
-    .centered-content p {
-        margin-top: 15px;
-        font-size: 1em;
-        color: var(--text-color);
-        opacity: 0.8;
-    }
-
+  }
 </style>
 {% endblock %}
