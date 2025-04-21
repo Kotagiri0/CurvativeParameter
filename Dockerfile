@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y \
     mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
+# Копируем зависимости отдельно для кэширования слоев
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 
 COPY . .
 

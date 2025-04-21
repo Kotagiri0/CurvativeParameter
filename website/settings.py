@@ -75,20 +75,37 @@ WSGI_APPLICATION = 'website.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# Настройки БД с использованием переменных окружения
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'mydb',
-        'USER': 'myuser',
-        'PASSWORD': 'mypassword',
-        'HOST': 'mysql',  # Имя сервиса MySQL в docker-compose.yml
-        'PORT': '3306',
+        'NAME': os.getenv('MYSQL_DATABASE', 'mydb'),
+        'USER': os.getenv('MYSQL_USER', 'myuser'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD', 'mypassword'),
+        'HOST': os.getenv('MYSQL_HOST', 'mysql'),
+        'PORT': os.getenv('MYSQL_PORT', '3306'),
         'OPTIONS': {
+            'charset': 'utf8mb4',
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'connect_timeout': 30,  # Увеличенный таймаут
         },
+        'CONN_MAX_AGE': 300,  # Подключения будут жить 5 минут
     }
 }
 
+# Безопасность
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+# Настройки статики и медиа
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Для сбора статики
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -123,11 +140,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
