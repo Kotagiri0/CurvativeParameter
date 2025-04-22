@@ -18,7 +18,7 @@ temperature(K)"></textarea>
             Вещественные числа пишутся через <code>.</code><br />
             Данные разделяются символом <code>;</code><br />
             Первая строка — название таблицы (<code>title</code>)<br />
-            Вторая строка — реакция (<code>solution</code>)<br />
+            Вторая строка — раствор (<code>solution</code>)<br />
             Последняя строка — температура в Кельвинах (<code>temperature</code>)
         </div>
 
@@ -121,8 +121,8 @@ temperature(K)"></textarea>
     }
 
     .note code {
-        color: var(--accent-color);
-        background: rgba(0, 0, 0, 0.1);
+        color: var(--tag-color);
+        background: var(--tag-bg);
         padding: 2px 4px;
         border-radius: 3px;
     }
@@ -273,7 +273,7 @@ temperature(K)"></textarea>
         const points = lines.slice(2, -1);
 
         let html = `<h3>${title}</h3>`;
-        html += `<p><strong>Реакция:</strong> ${solution}</p>`;
+        html += `<p><strong>Раствор:</strong> ${solution}</p>`;
         html += `<p><strong>Температура:</strong> ${temperature}</p>`;
         html += `<h4>Точки:</h4><ul>`;
         points.forEach(p => {

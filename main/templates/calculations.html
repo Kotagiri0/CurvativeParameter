@@ -47,26 +47,65 @@
         <div class="cp-params-tags">
           {% if a and b %}
             <span class="cp-table-tag">Метод: Гаусс</span>
-            <span class="cp-table-tag">a = {{ a }}</span>
-            <span class="cp-table-tag">b = {{ b }}</span>
+            <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
           {% elif c and d %}
             <span class="cp-table-tag">Метод: Гаусс с переменным шагом</span>
-            <span class="cp-table-tag">a = {{ c }}</span>
-            <span class="cp-table-tag">b = {{ d }}</span>
+            <span class="cp-table-tag">A<sub>12</sub> = {{ c }}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = {{ d }}</span>
           {% elif e and f %}
             <span class="cp-table-tag">Метод: Градиентный спуск</span>
-            <span class="cp-table-tag">a = {{ e }}</span>
-            <span class="cp-table-tag">b = {{ f }}</span>
+            <span class="cp-table-tag">A<sub>12</sub> = {{ e }}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = {{ f }}</span>
           {% elif g and h %}
             <span class="cp-table-tag">Метод: Шаговый градиентный спуск</span>
-            <span class="cp-table-tag">a = {{ g }}</span>
-            <span class="cp-table-tag">b = {{ h }}</span>
+            <span class="cp-table-tag">A<sub>12</sub> = {{ g }}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = {{ h }}</span>
           {% elif i and j %}
             <span class="cp-table-tag">Метод: Отжиг</span>
-            <span class="cp-table-tag">a = {{ i }}</span>
-            <span class="cp-table-tag">b = {{ j }}</span>
+            <span class="cp-table-tag">A<sub>12</sub> = {{ i }}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = {{ j }}</span>
           {% endif %}
+          <span class="cp-table-tag">Итераций: {{ iterations }}</span>
+          <span class="cp-table-tag">Время: {{ exec_time }}</span>
         </div>
+
+        <!-- Таблица результатов для метода отжига -->
+        {% if table_data %}
+          <button class="cp-table-toggle" onclick="toggleTable(this)">
+            <span>Показать таблицу результатов</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="cp-table-container">
+            <h4>Таблица результатов</h4>
+            <table class="cp-result-table">
+              <thead>
+                <tr>
+                  <th>x<sub>2</sub> (моль)</th>
+                  <th>G<sup>e</sup> mod (Дж*моль<sup>-1</sup>)</th>
+                  <th>G<sup>e</sup> exp (Дж*моль<sup>-1</sup>)</th>
+                  <th>σ (%)</th>
+                  <th>δ (Дж*моль<sup>-1</sup>)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in table_data %}
+                  <tr>
+                    <td>{{ row.x2|floatformat:3 }}</td>
+                    <td>{{ row.gmod }}</td>
+                    <td>{{ row.gexp }}</td>
+                    <td>{{ row.sigma }}</td>
+                    <td>{{ row.delta }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+
+        <a href="{% url 'graphs' %}" class="cp-btn cp-btn-primary cp-btn-graphs">
+          <i class="fas fa-chart-line"></i> Перейти к графикам
+        </a>
       </div>
     {% endif %}
   </div>
@@ -207,13 +246,17 @@
     transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
+    box-sizing: border-box;
   }
 
   .cp-btn-primary {
     background: var(--accent-color);
     color: white;
     border: none;
-    width: 100%;
+    width: calc(100% - 20px); /* Учитываем внутренние отступы карточки */
+    justify-content: center;
+    margin-left: 10px;
+    margin-right: 10px;
   }
 
   .cp-btn-primary:hover {
@@ -230,6 +273,12 @@
     transform: scale(1.2);
   }
 
+  /* Кнопка перехода к графикам */
+  .cp-btn-graphs {
+    margin-top: 20px;
+    margin-bottom: 15px;
+  }
+
   /* Параметры */
   .cp-params-tags {
     display: flex;
@@ -237,6 +286,7 @@
     gap: 10px;
     justify-content: center;
     margin-top: 15px;
+    margin-bottom: 20px;
   }
 
   .cp-table-tag {
@@ -250,6 +300,106 @@
 
   .cp-table-tag:hover {
     transform: scale(1.1);
+  }
+
+  /* Таблица результатов */
+  .cp-table-container {
+    margin-top: 10px;
+    overflow-x: auto;
+    max-height: 0;
+    transition: max-height 0.4s ease-out, padding 0.3s ease;
+    padding: 0;
+  }
+
+  .cp-table-container.open {
+    max-height: 600px;
+    padding: 15px 0;
+    transition: max-height 0.4s ease-in, padding 0.3s ease;
+  }
+
+  .cp-table-container h4 {
+    font-size: 1.1rem;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+  }
+
+  .cp-result-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  [data-theme="dark"] .cp-result-table {
+    background: rgba(30, 30, 30, 0.3);
+  }
+
+  .cp-result-table th,
+  .cp-result-table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--text-color);
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] .cp-result-table th,
+  [data-theme="dark"] .cp-result-table td {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-result-table th {
+    background: var(--accent-color);
+    color: white;
+    font-weight: 600;
+  }
+
+  .cp-result-table tbody tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  [data-theme="dark"] .cp-result-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .cp-result-table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-result-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Кнопка сворачивания/разворачивания таблицы */
+  .cp-table-toggle {
+    width: calc(100% - 20px); /* Учитываем внутренние отступы карточки */
+    background: var(--accent-color);
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    transition: background 0.3s, transform 0.3s;
+    margin: 15px 10px 0;
+    box-sizing: border-box;
+  }
+
+  .cp-table-toggle:hover {
+    background: #2980b9;
+    transform: scale(1.02);
+  }
+
+  .cp-table-toggle i {
+    transition: transform 0.3s;
+  }
+
+  .cp-table-toggle.open i {
+    transform: rotate(180deg);
   }
 
   /* Оверлей загрузки */
@@ -316,6 +466,9 @@
     .cp-btn-primary {
       padding: 10px 20px;
       font-size: 0.9rem;
+      width: calc(100% - 10px);
+      margin-left: 5px;
+      margin-right: 5px;
     }
 
     .cp-table-tag {
@@ -326,6 +479,19 @@
     .cp-loading-gif {
       max-width: 150px;
       max-height: 150px;
+    }
+
+    .cp-result-table th,
+    .cp-result-table td {
+      font-size: 0.8rem;
+      padding: 8px;
+    }
+
+    .cp-table-toggle {
+      font-size: 0.9rem;
+      padding: 8px;
+      margin: 10px 5px 0;
+      width: calc(100% - 10px);
     }
   }
 </style>
@@ -345,5 +511,20 @@
       }, 5000); // 5 секунд для теста, настрой под сервер
     });
   });
+
+  function toggleTable(button) {
+    const content = button.nextElementSibling;
+    const icon = button.querySelector('i');
+
+    if (content.classList.contains('open')) {
+      content.classList.remove('open');
+      button.querySelector('span').textContent = 'Показать таблицу результатов';
+      button.classList.remove('open');
+    } else {
+      content.classList.add('open');
+      button.querySelector('span').textContent = 'Скрыть таблицу';
+      button.classList.add('open');
+    }
+  }
 </script>
 {% endblock %}

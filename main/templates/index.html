@@ -4,13 +4,13 @@
 
 {% block content %}
 <!-- Главный баннер -->
-<section class="cp-hero">
+<section class="cp-hero" id="hero">
   <div class="cp-hero-content">
     <h1>
-      <span class="cp-gradient-text">Моделирование</span>
-      <span class="cp-pulse">термодинамических параметров</span>
+      <span class="cp-gradient-text cp-pulse">Моделирование</span>
+      <span class="">термодинамических параметров</span>
     </h1>
-    <p>Численные методы для анализа бинарных растворов неэлектролитов</p>
+    <p class="cp-hero-subtitle">Численные методы для анализа бинарных растворов неэлектролитов</p>
     <div class="cp-hero-buttons">
       {% if user.is_authenticated %}
         <a href="{% url 'calculations' %}" class="cp-btn cp-btn-primary">
@@ -32,91 +32,122 @@
 </section>
 
 <!-- Теория -->
-<section class="cp-section">
+<section class="cp-section" id="theory">
   <h2><i class="fas fa-book-open"></i> Теоретическая основа</h2>
   <div class="cp-theory-card">
     <p>
-      Для бинарных растворов неэлектролитов ключевым параметром является <strong>избыточная энергия Гиббса (G<sup>E</sup>)</strong>,
-      описывающая отклонение от идеального поведения.
+      Модель Маргулесса описывает <strong>избыточную энергию Гиббса (G<sup>E</sup>)</strong> для бинарных растворов неэлектролитов, учитывая взаимодействия между компонентами через параметры <i>A<sub>12</sub></i> и <i>A<sub>21</sub></i>.
     </p>
-    <div class="cp-formula">
-      G<sup>E</sup> = RT (x<sub>1</sub> ln γ<sub>1</sub> + x<sub>2</sub> ln γ<sub>2</sub>)
-    </div>
+    <div class="cp-formula" id="gibbs-formula"></div>
     <p>
-      Численные методы позволяют определить параметры моделей (Margules, Van Laar, NRTL)
-      на основе экспериментальных данных.
+      Численные методы оптимизации используются для подбора этих параметров на основе экспериментальных данных.
     </p>
   </div>
 </section>
 
 <!-- Методы -->
-<section class="cp-section">
+<section class="cp-section" id="methods">
   <h2><i class="fas fa-cogs"></i> Методы оптимизации</h2>
   <div class="cp-methods-grid">
     <!-- Метод Гаусса -->
-    <div class="cp-method-card">
-      <div class="cp-method-icon">
-        <i class="fas fa-calculator"></i>
+    <div class="cp-method-card cp-flip-card">
+      <div class="cp-flip-card-inner">
+        <div class="cp-flip-card-front">
+          <div class="cp-method-icon">
+            <i class="fas fa-calculator"></i>
+          </div>
+          <h3>Метод Гаусса</h3>
+          <span class="cp-method-tag">Параметризация Гиббса</span>
+        </div>
+        <div class="cp-flip-card-back">
+          <p>Наиболее простой численный метод для параметризации моделей равновесия.</p>
+        </div>
       </div>
-      <h3>Метод Гаусса</h3>
-      <p>Классический численный метод для параметризации моделей равновесия.</p>
-      <span class="cp-method-tag">Параметризация Гиббса</span>
     </div>
 
-    <!-- Остальные методы -->
-    <div class="cp-method-card">
-      <div class="cp-method-icon">
-        <i class="fas fa-sliders-h"></i>
+    <!-- Метод Гаусса с переменным шагом -->
+    <div class="cp-method-card cp-flip-card">
+      <div class="cp-flip-card-inner">
+        <div class="cp-flip-card-front">
+          <div class="cp-method-icon">
+            <i class="fas fa-sliders-h"></i>
+          </div>
+          <h3>Метод Гаусса с переменным шагом</h3>
+          <span class="cp-method-tag">Адаптация параметров</span>
+        </div>
+        <div class="cp-flip-card-back">
+          <p>Адаптивный шаг для сложных моделей. Устраняет расходимость.</p>
+        </div>
       </div>
-      <h3>Метод Гаусса с переменным шагом</h3>
-      <p>Адаптивный шаг для сложных моделей. Устраняет расходимость.</p>
-      <span class="cp-method-tag">Адаптация параметров</span>
     </div>
 
-    <div class="cp-method-card">
-      <div class="cp-method-icon">
-        <i class="fas fa-chart-line"></i>
+    <!-- Градиентный спуск -->
+    <div class="cp-method-card cp-flip-card">
+      <div class="cp-flip-card-inner">
+        <div class="cp-flip-card-front">
+          <div class="cp-method-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3>Градиентный спуск</h3>
+          <span class="cp-method-tag">Минимизация MSE</span>
+        </div>
+        <div class="cp-flip-card-back">
+          <p>Минимизация функции отклонения через градиент.</p>
+        </div>
       </div>
-      <h3>Градиентный спуск</h3>
-      <p>Минимизация функции отклонения через градиент.</p>
-      <span class="cp-method-tag">Минимизация MSE</span>
     </div>
 
-    <div class="cp-method-card">
-      <div class="cp-method-icon">
-        <i class="fas fa-tachometer-alt"></i>
+    <!-- Градиентный спуск с переменным шагом -->
+    <div class="cp-method-card cp-flip-card">
+      <div class="cp-flip-card-inner">
+        <div class="cp-flip-card-front">
+          <div class="cp-method-icon">
+            <i class="fas fa-tachometer-alt"></i>
+          </div>
+          <h3>Градиентный спуск с переменным шагом</h3>
+          <span class="cp-method-tag">Динамический шаг</span>
+        </div>
+        <div class="cp-flip-card-back">
+          <p>Динамический шаг для негладких минимумов.</p>
+        </div>
       </div>
-      <h3>Градиентный спуск с переменным шагом</h3>
-      <p>Динамический шаг для негладких минимумов.</p>
-      <span class="cp-method-tag">Динамический шаг</span>
     </div>
 
-    <div class="cp-method-card">
-      <div class="cp-method-icon">
-        <i class="fas fa-fire"></i>
+    <!-- Метод отжига -->
+    <div class="cp-method-card cp-flip-card">
+      <div class="cp-flip-card-inner">
+        <div class="cp-flip-card-front">
+          <div class="cp-method-icon">
+            <i class="fas fa-fire"></i>
+          </div>
+          <h3>Метод отжига</h3>
+          <span class="cp-method-tag">Глобальный поиск</span>
+        </div>
+        <div class="cp-flip-card-back">
+          <p>Стохастический поиск глобального минимума.</p>
+        </div>
       </div>
-      <h3>Метод отжига</h3>
-      <p>Стохастический поиск глобального минимума.</p>
-      <span class="cp-method-tag">Глобальный поиск</span>
     </div>
   </div>
 </section>
 
 <!-- Пример с графиком -->
-<section class="cp-section">
+<section class="cp-section" id="example">
   <h2><i class="fas fa-flask"></i> Пример расчёта</h2>
   <div class="cp-example-card">
     <p>
-      Параметры модели NRTL для системы <strong>этанол-вода</strong> (25°C):
+      Параметры модели для системы <strong>этанол-вода</strong> (298K) с использованием метода Гаусса:
     </p>
     <div class="cp-results">
-      <div>
-        <span>Δg<sub>12</sub> (J/mol):</span>
-        <strong>−529.3 ± 12.7</strong>
+      <div class="cp-result-item">
+        <span>A<sub>12</sub> (Дж*моль<sup>-1</sup>): (</span>
+        <strong class="cp-result-value" data-value="530">0</strong>
+        <span class="cp-result-error">±13 )</span>
       </div>
-      <div>
-        <span>Δg<sub>21</sub> (J/mol):</span>
-        <strong>1024.6 ± 18.2</strong>
+      <div class="cp-result-item">
+        <span>A<sub>21</sub> (Дж*моль<sup>-1</sup>): (</span>
+        <strong class="cp-result-value" data-value="1025">0</strong>
+        <span class="cp-result-error">±18 )</span>
       </div>
     </div>
     <div class="cp-graph-container">
@@ -126,80 +157,225 @@
 </section>
 
 <!-- Литература -->
-<section class="cp-section">
+<section class="cp-section" id="literature">
   <h2><i class="fas fa-graduation-cap"></i> Рекомендуемая литература</h2>
   <div class="cp-literature-card">
     <ul class="cp-literature-list">
       <li>
         <i class="fas fa-book"></i>
-        <a href="#" target="_blank">Prausnitz J.M. "Molecular Thermodynamics of Fluid-Phase Equilibria"</a>
+        <a href="https://www.pearson.com/store/p/molecular-thermodynamics-of-fluid-phase-equilibria/P100000177354" target="_blank">Prausnitz J.M. "Molecular Thermodynamics of Fluid-Phase Equilibria"</a>
       </li>
       <li>
         <i class="fas fa-file-alt"></i>
-        <a href="#" target="_blank">Smith J.M. "Introduction to Chemical Engineering Thermodynamics"</a>
+        <a href="https://www.mheducation.com/highered/product/introduction-chemical-engineering-thermodynamics-smith-ness/M9781259696527.html" target="_blank">Smith J.M. "Introduction to Chemical Engineering Thermodynamics"</a>
       </li>
     </ul>
   </div>
 </section>
 
-<!-- Подключаем Chart.js -->
+<!-- Подключаем библиотеки -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
 <script>
-  // График сходимости
-  const ctx = document.getElementById('cp-convergence-chart').getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['1', '5', '10', '20', '50', '100'],
-      datasets: [{
-        label: 'Ошибка модели (%)',
-        data: [12.5, 5.3, 2.8, 1.7, 1.2, 1.1],
-        borderColor: '#4197DE',
-        tension: 0.3,
-        fill: false
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: false
-        }
+document.addEventListener('DOMContentLoaded', () => {
+  katex.render("\\frac{G^E}{RT} = x_1 x_2 (x_1 A_{12} + x_2 A_{21})", document.getElementById('gibbs-formula'), {
+    displayMode: true,
+    throwOnError: false
+  });
+});
+
+// Анимация чисел
+gsap.utils.toArray('.cp-result-value').forEach((element) => {
+  gsap.fromTo(
+    element,
+    { innerText: 0 },
+    {
+      innerText: element.dataset.value,
+      duration: 2,
+      ease: 'power2.out',
+      snap: { innerText: 0.1 },
+      onUpdate: function () {
+        element.innerText = parseFloat(element.innerText).toFixed(1);
       }
     }
+  );
+});
+
+// Определяем цвета в зависимости от темы
+function getChartColors() {
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    textColor: isDarkTheme ? '#ffffff' : '#000000', // Белый для темной, черный для светлой
+    lineColor: isDarkTheme ? '#ffffff' : '#000000', // Линия графика
+    fillColor: isDarkTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' // Заливка под линией
+  };
+}
+
+// Функция обновления цветов графика
+function updateChartColors(chart) {
+  const colors = getChartColors();
+  chart.data.datasets[0].borderColor = colors.lineColor;
+  chart.data.datasets[0].backgroundColor = colors.fillColor;
+  chart.options.scales.y.title.color = colors.textColor;
+  chart.options.scales.y.ticks.color = colors.textColor;
+  chart.options.scales.x.title.color = colors.textColor;
+  chart.options.scales.x.ticks.color = colors.textColor;
+  chart.options.plugins.legend.labels.color = colors.textColor;
+  chart.options.plugins.title.color = colors.textColor;
+  chart.update();
+}
+
+// График
+const ctx = document.getElementById('cp-convergence-chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['1', '5', '10', '20', '50', '100', '200', '500', '1000', '2000'],
+    datasets: [{
+      label: 'Погрешность модели (%)',
+      data: [12.5, 5.3, 2.8, 1.7, 1.2, 1.1, 0.9, 0.7, 0.6, 0.5],
+      borderColor: '#000000',
+      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+      tension: 0.3,
+      fill: true
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: 'Погрешность (%)',
+          color: '#000000'
+        },
+        ticks: { color: '#000000' }
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Итерации (ед.)',
+          color: '#000000'
+        },
+        ticks: { color: '#000000' }
+      }
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#000000'
+        }
+      },
+      title: {
+        display: true,
+        text: 'Метод Гаусса',
+        color: '#000000',
+        font: { size: 14 }
+      }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeOutQuad'
+    }
+  }
+});
+
+// Немедленное обновление цветов при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  updateChartColors(chart);
+});
+
+// Наблюдатель за изменением атрибута data-theme
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.attributeName === 'data-theme') {
+      updateChartColors(chart);
+    }
   });
+});
+observer.observe(document.documentElement, { attributes: true });
+
+// Пример переключения темы
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+}
+
+// Привязка к кнопке (замените селектор на ваш)
+document.addEventListener('DOMContentLoaded', () => {
+  const themeButton = document.querySelector('#theme-toggle-button');
+  if (themeButton) {
+    themeButton.addEventListener('click', toggleTheme);
+  }
+});
+
+// GSAP анимации
+gsap.from('.cp-hero-content', { opacity: 0, y: 50, duration: 1, ease: 'power3.out' });
+gsap.from('.cp-hero-visual', { opacity: 0, scale: 0.5, duration: 1.5, ease: 'back.out(1.7)' });
+gsap.from('.cp-section', { opacity: 0, y: 30, stagger: 0.2, duration: 1, ease: 'power2.out', delay: 0.5 });
+gsap.from('.cp-method-card', { opacity: 0, scale: 0.9, stagger: 0.1, duration: 0.8, ease: 'back.out(1.7)' });
+gsap.from('.cp-literature-list li', { opacity: 0, x: -30, stagger: 0.2, duration: 0.8, ease: 'power2.out' });
+gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2.out', delay: 1 });
 </script>
 
 <style>
   /* Основные стили */
   :root {
-    --accent-color: #4197DE; /* Для светлой темы */
+    --text-color: #000000;
+    --accent-color: #4197DE;
     --tag-bg: rgba(65, 151, 222, 0.2);
     --tag-color: #4197DE;
+    --shadow-color: rgba(0, 0, 0, 0.2);
   }
 
   [data-theme="dark"] {
-    --accent-color: #66b3ff; /* Более яркий для тёмной темы */
+    --text-color: #ffffff;
+    --accent-color: #66b3ff;
     --tag-bg: rgba(100, 181, 255, 0.3);
     --tag-color: #e6f3ff;
+    --shadow-color: rgba(0, 0, 0, 0.5);
   }
 
+  /* Фон берётся из base.html (SVG с формулами, formulaFloat анимация) */
+  body {
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Герой */
   .cp-hero {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 40px 5%;
-    background: var(--background-color);
-    border-radius: 10px;
-    margin: 20px auto;
+    padding: 60px 5%;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    margin: 30px auto;
     max-width: 1200px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px var(--shadow-color);
+    position: relative;
+    overflow: hidden;
+  }
+
+  [data-theme="dark"] .cp-hero {
+    background: rgba(30, 30, 30, 0.2);
+  }
+
+  .cp-hero-content {
+    max-width: 60%;
   }
 
   .cp-hero-content h1 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
+    font-size: 2.8rem;
+    margin-bottom: 20px;
     color: var(--text-color);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
 
   .cp-gradient-text {
@@ -214,27 +390,45 @@
     animation: cp-pulse-animation 2s infinite;
   }
 
+  .cp-hero-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: 25px;
+  }
+
+  .cp-hero-buttons {
+    display: flex;
+    gap: 15px;
+  }
+
   .cp-hero-visual {
-    font-size: 6rem;
+    font-size: 8rem;
     color: var(--accent-color);
+  }
+
+  .cp-hero-icon {
+    display: inline-block;
     animation: cp-spin 15s linear infinite;
   }
 
+  /* Секции */
   .cp-section {
     max-width: 1200px;
-    margin: 40px auto;
+    margin: 60px auto;
     padding: 0 5%;
   }
 
   .cp-section h2 {
-    font-size: 1.8rem;
-    margin-bottom: 25px;
+    font-size: 2rem;
+    margin-bottom: 30px;
     color: var(--text-color);
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-color);
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid var(--accent-color);
+    animation: slideInLeft 0.8s ease-out;
   }
 
   /* Карточки */
@@ -242,12 +436,13 @@
   .cp-example-card,
   .cp-literature-card {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 25px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(5px);
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 6px 15px var(--shadow-color);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
   [data-theme="dark"] .cp-theory-card,
@@ -257,51 +452,164 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  .cp-theory-card:hover,
+  .cp-example-card:hover,
+  .cp-literature-card:hover {
+    transform: translateY(-5px) rotateX(5deg);
+    box-shadow: 0 12px 25px var(--shadow-color);
+  }
+
+  .cp-theory-card p,
+  .cp-example-card p {
+    font-size: 1rem;
+    color: var(--text-color);
+    line-height: 1.6;
+  }
+
+  .cp-tag {
+    color: var(--tag-color);
+    background: var(--tag-bg);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    margin: 0 5px;
+    transition: transform 0.3s ease;
+  }
+
+  .cp-tag:hover {
+    transform: scale(1.1);
+  }
+
+  .cp-formula {
+    font-size: 1.2rem;
+    text-align: center;
+    margin: 20px 0;
+    color: var(--text-color);
+    animation: fadeInUp 0.8s ease-out;
+  }
+
   /* Методы */
   .cp-methods-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 30px;
   }
 
   .cp-method-card {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 20px;
-    transition: transform 0.3s, box-shadow 0.3s;
+    perspective: 1000px;
+    will-change: transform;
   }
 
-  [data-theme="dark"] .cp-method-card {
+  .cp-flip-card-inner {
+    position: relative;
+    width: 100%;
+    min-height: 220px;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+
+  .cp-method-card:hover .cp-flip-card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .cp-flip-card-front,
+  .cp-flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 6px 15px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-flip-card-front,
+  [data-theme="dark"] .cp-flip-card-back {
     background: rgba(30, 30, 30, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .cp-method-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  .cp-flip-card-back {
+    transform: rotateY(180deg);
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    justify-content: center;
   }
 
   .cp-method-icon {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: var(--accent-color);
     margin-bottom: 15px;
+    animation: bounce 2s infinite;
+  }
+
+  .cp-method-card h3 {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-bottom: 10px;
   }
 
   .cp-method-tag {
     display: inline-block;
     background: var(--tag-bg);
-    color: var(--tag-color);
-    padding: 5px 10px;
+    color: #2c3e50;
+    padding: 6px 12px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-top: 10px;
+    transition: transform 0.3s ease;
   }
 
-  /* График */
+  [data-theme="dark"] .cp-method-tag {
+    background: linear-gradient(45deg, var(--tag-bg), var(--accent-color));
+    color: var(--tag-color);
+  }
+
+  .cp-method-tag:hover {
+    transform: scale(1.1);
+  }
+
+  /* Пример */
+  .cp-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 20px 0;
+    justify-content: center;
+  }
+
+  .cp-result-item {
+    background: var(--tag-bg);
+    padding: 10px 20px;
+    border-radius: 10px;
+    color: var(--text-color);
+    font-size: 1rem;
+  }
+
+  .cp-result-value,
+  .cp-result-error {
+    color: var(--tag-color);
+    font-weight: 600;
+  }
+
   .cp-graph-container {
-    margin-top: 20px;
-    height: 300px;
+    margin-top: 30px;
+    height: 350px;
+   otel: relative;
+    background: transparent;
+  }
+
+  #cp-convergence-chart {
+    background: transparent !important;
   }
 
   /* Литература */
@@ -311,35 +619,58 @@
   }
 
   .cp-literature-list li {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+  }
+
+  .cp-literature-list i {
+    color: var(--accent-color);
+    transition: transform 0.3s ease;
+  }
+
+  .cp-literature-list li:hover i {
+    transform: rotate(10deg);
   }
 
   .cp-literature-list a {
-    color: var(--accent-color);
+    color: var(--tag-color);
     text-decoration: none;
-    transition: color 0.3s;
+    transition: all 0.3s ease;
   }
 
   .cp-literature-list a:hover {
-    color: var(--link-hover);
+    color: var(--accent-color);
+    text-decoration: underline;
+    transform: scale(1.05);
   }
 
   /* Кнопки */
   .cp-btn {
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
+    gap: 10px;
+    transition: all 0.3s ease;
     cursor: pointer;
+    text-decoration: none;
   }
 
   .cp-btn-primary {
     background: var(--accent-color);
     color: white;
     border: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-btn-primary:hover {
+    background: #2980b9;
+    transform confirmed: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   }
 
   .cp-btn-outline {
@@ -348,11 +679,25 @@
     background: transparent;
   }
 
+  .cp-btn-outline:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.05);
+  }
+
+  .cp-btn i {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-btn:hover i {
+    transform: scale(1.2);
+  }
+
   /* Анимации */
   @keyframes cp-pulse-animation {
-    0% { opacity: 1; }
-    50% { opacity: 0.8; }
-    100% { opacity: 1; }
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
   }
 
   @keyframes cp-spin {
@@ -360,15 +705,105 @@
     to { transform: rotate(360deg); }
   }
 
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
   /* Адаптивность */
   @media (max-width: 768px) {
     .cp-hero {
       flex-direction: column;
+      padding: 40px 3%;
+      margin: 20px auto;
+    }
+
+    .cp-hero-content {
+      max-width: 100%;
       text-align: center;
     }
+
+    .cp-hero-content h1 {
+      font-size: 2rem;
+    }
+
+    .cp-hero-subtitle {
+      font-size: 1rem;
+    }
+
+    .cp-hero-buttons {
+      flex-direction: column;
+      gap: 10px;
+    }
+
     .cp-hero-visual {
-      margin-top: 30px;
-      font-size: 4rem;
+      margin-top: 20px;
+      font-size: 5rem;
+    }
+
+    .cp-section {
+      margin: 40px auto;
+      padding: 0 3%;
+    }
+
+    .cp-section h2 {
+      font-size: 1.6rem;
+    }
+
+    .cp-methods-grid {
+      grid-template-columns: 1fr;
+      gap: 25px;
+    }
+
+    .cp-flip-card-inner {
+      min-height: 200px;
+    }
+
+    .cp-graph-container {
+      height: 250px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cp-hero-content h1 {
+      font-size: 1.8rem;
+    }
+
+    .cp-hero-subtitle {
+      font-size: 0.9rem;
+    }
+
+    .cp-btn {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+
+    .cp-section h2 {
+      font-size: 1.4rem;
+    }
+
+    .cp-theory-card p,
+    .cp-example-card p {
+      font-size: 0.9rem;
+    }
+
+    .cp-method-card h3 {
+      font-size: 1.1rem;
+    }
+
+    .cp-flip-card-inner {
+      min-height: 180px;
     }
   }
 </style>

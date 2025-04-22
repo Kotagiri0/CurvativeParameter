@@ -13,7 +13,18 @@
       <form method="post" class="cp-form">
         {% csrf_token %}
         <div class="cp-form-content">
-          {{ form.as_p }}
+          <div class="cp-form-group">
+            <label for="{{ form.table_choice.id_for_label }}">Выберите таблицу:</label>
+            {{ form.table_choice }}
+          </div>
+          <div class="cp-form-group">
+            <label for="{{ form.parameter_a.id_for_label }}">Параметр A<sub>12</sub>:</label>
+            {{ form.parameter_a }}
+          </div>
+          <div class="cp-form-group">
+            <label for="{{ form.parameter_b.id_for_label }}">Параметр A<sub>21</sub>:</label>
+            {{ form.parameter_b }}
+          </div>
           <input type="hidden" name="theme" id="themeInput">
         </div>
         <button type="submit" class="cp-btn cp-btn-primary">
@@ -30,8 +41,8 @@
           <img src="data:image/png;base64,{{ graphic }}" alt="График" />
         </div>
         <div class="cp-params-tags">
-          <span class="cp-table-tag">a = {{ a }}</span>
-          <span class="cp-table-tag">b = {{ b }}</span>
+          <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
         </div>
 
         <!-- Информация о графике (аккордеон) -->
@@ -40,9 +51,9 @@
           <i class="fas fa-info-circle"></i>
         </button>
         <div class="cp-info-content">
-          <p><strong>Как построен:</strong> График генерируется с использованием библиотеки Matplotlib на основе введённых параметров <code>a</code> и <code>b</code>. Эти параметры определяют форму зависимости, которая отображается в виде кривой (например, энергия активации от расстояния между молекулами).</p>
+          <p><strong>Как построен:</strong> График генерируется с использованием библиотеки Matplotlib на основе введённых параметров <code>A<sub>12</sub></code> и <code>A<sub>21</sub></code>. Эти параметры определяют форму зависимости, которая отображается в виде кривой (например, энергия активации от расстояния между молекулами).</p>
           <p><strong>Физхимический смысл:</strong> В физической химии такие графики используются для анализа кинетических или термодинамических процессов. Например, график может показывать, как энергия системы меняется в зависимости от параметров реакции, помогая определить барьеры активации, константы скорости или равновесные состояния.</p>
-          <span class="cp-table-tag">Применение: Кинетика, Термодинамика</span>
+          <span class="cp-table-tag">Применение: Термодинамика</span>
         </div>
       </div>
     {% endif %}
@@ -141,17 +152,19 @@
     box-sizing: border-box;
   }
 
-  .cp-form-content p {
-    margin: 10px 0;
-    color: var(--text-color);
-    font-size: 1rem;
-    text-align: left;
+  .cp-form-group {
+    margin-bottom: 20px;
   }
 
-  .cp-form-content input[type="text"],
-  .cp-form-content input[type="number"],
-  .cp-form-content select,
-  .cp-form-content textarea {
+  .cp-form-group label {
+    display: block;
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-bottom: 8px;
+  }
+
+  .cp-form-group select,
+  .cp-form-group input[type="number"] {
     width: 100%;
     max-width: 100%;
     padding: 8px 12px;
@@ -164,35 +177,31 @@
     box-sizing: border-box;
   }
 
-  [data-theme="dark"] .cp-form-content input[type="text"],
-  [data-theme="dark"] .cp-form-content input[type="number"],
-  [data-theme="dark"] .cp-form-content select,
-  [data-theme="dark"] .cp-form-content textarea {
+  [data-theme="dark"] .cp-form-group select,
+  [data-theme="dark"] .cp-form-group input[type="number"] {
     border: 2px solid rgba(255, 255, 255, 0.1);
     background: rgba(30, 30, 30, 0.7);
     color: var(--tag-color);
   }
 
-  .cp-form-content input:focus,
-  .cp-form-content select:focus,
-  .cp-form-content textarea:focus {
+  .cp-form-group select:focus,
+  .cp-form-group input[type="number"]:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.3);
     outline: none;
   }
 
-  [data-theme="dark"] .cp-form-content input:focus,
-  [data-theme="dark"] .cp-form-content select:focus,
-  [data-theme="dark"] .cp-form-content textarea:focus {
+  [data-theme="dark"] .cp-form-group select:focus,
+  [data-theme="dark"] .cp-form-group input[type="number"]:focus {
     background: rgba(50, 50, 50, 0.7);
   }
 
-  .cp-form-content select option {
+  .cp-form-group select option {
     background: var(--background-color);
     color: var(--text-color);
   }
 
-  [data-theme="dark"] .cp-form-content select option {
+  [data-theme="dark"] .cp-form-group select option {
     background: rgba(30, 30, 30, 0.9);
     color: var(--tag-color);
   }
@@ -358,10 +367,8 @@
       padding: 0 5px;
     }
 
-    .cp-form-content input[type="text"],
-    .cp-form-content input[type="number"],
-    .cp-form-content select,
-    .cp-form-content textarea {
+    .cp-form-group select,
+    .cp-form-group input[type="number"] {
       font-size: 0.85rem;
     }
 
