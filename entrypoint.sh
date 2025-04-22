@@ -1,26 +1,24 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-# Ожидаем готовности MySQL
+# Ожидание MySQL с таймаутом
 echo "Waiting for MySQL..."
-while ! mysqladmin ping -h mysql --silent; do
-    sleep 1
-done
-echo "MySQL is up!"
+timeout 60 bash -c 'until mysqladmin ping -h mysql -u myuser -p$$MYSQL_PASSWORD --silent; do sleep 2; done'
+echo "MySQL is ready!"
 
-# Выполняем миграции
-python manage.py migrate
+# Применение миграций
+python manage.py migrate --no-input
 
-# Создаем суперпользователя, если он не существует
-python manage.py shell <<EOF
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', 'admin')
-    print('Superuser created.')
-else:
-    print('Superuser already exists.')
-EOF
+# Сбор статики
+python manage.py collectstatic --no-input --clear
 
-# Запускаем сервер
-exec python manage.py runserver 0.0.0.0:8000
+# Создание суперпользователя
+if [ "$DJANGO_SUPERUSER_USERNAME" ]; then
+  python manage.py createsuperuser \
+    --noinput \
+    --username $DJANGO_SUPERUSER_USERNAME \
+    --email $DJANGO_SUPERUSER_EMAIL || true
+fi
+
+# Запуск сервера
+exec gunicorn --bind 0.0.0.0:8000 website.wsgi:application
