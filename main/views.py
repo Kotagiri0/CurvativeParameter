@@ -87,13 +87,13 @@ def profile(request):
             'username': request.user.username,
             'password': request.user.password
         }
-        return JsonResponse(context)
+        return render(request, "profile.html", context)
     else:
         context = {
             'username': request.user.username,
             'password': request.user.password
         }
-        return JsonResponse(context)
+        return render(request, "profile.html", context)
 
 @login_required
 def calculations(request):
