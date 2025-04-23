@@ -3,16 +3,17 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
-
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from .forms import RegisterForm, LoginForm, GraphForm
+from django.contrib.auth.models import User
+from django.contrib import messages
+from .forms import RegisterForm, LoginForm, GraphForm, UpdateEmailForm
 from .models import Point, Table
 from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
-from .forms import LoginForm
+
 param_a, param_b = 0, 0
 
 @login_required
@@ -36,7 +37,6 @@ def graph_view(request):
             for point in table.points.all():
                 xx.append(point.x_value)
                 yy.append(point.y_value)
-
 
             for point in new_x:
                 x1 = 1 - point
@@ -82,18 +82,8 @@ def databases(request):
 
 @login_required
 def profile(request):
-    if request.method == 'POST':
-        context = {
-            'username': request.user.username,
-            'password': request.user.password
-        }
-        return render(request, "profile.html", context)
-    else:
-        context = {
-            'username': request.user.username,
-            'password': request.user.password
-        }
-        return render(request, "profile.html", context)
+    context = {'username': request.user.username}
+    return render(request, "profile.html", context)
 
 @login_required
 def calculations(request):
@@ -134,6 +124,7 @@ def calculations(request):
     print(f"Контекст:{context}")
 
     return render(request, 'calculations.html', context)
+
 @login_required
 def home_page(request):
     return render(request, 'index.html')
@@ -162,19 +153,11 @@ def login_user(request):
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
 @login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
-
-
-
-@login_required
-def databases(request):
-    tables = Table.objects.all()
-    context = {"tables": tables}
-    return render(request, "databases.html", context)
-
 
 @login_required
 def delete_table(request, pk):
@@ -183,6 +166,7 @@ def delete_table(request, pk):
         table.delete()
         return redirect('databases')
     return redirect('databases')
+
 @login_required
 def create_table(request):
     if request.method == 'POST':
@@ -199,3 +183,21 @@ def create_table(request):
         return HttpResponseRedirect('/databases/')
 
     return render(request, 'create_table.html')
+
+@login_required
+def update_email(request):
+    if request.method == 'POST':
+        form = UpdateEmailForm(request.POST)
+        if form.is_valid():
+            request.user.email = form.cleaned_data['email']
+            request.user.save()
+            messages.success(request, 'Ваш email успешно обновлен!')
+            return redirect('home')
+        else:
+            # Передаем форму с ошибками в шаблон
+            context = {'email_form': form}
+            return render(request, 'index.html', context)
+    else:
+        form = UpdateEmailForm(initial={'email': request.user.email})
+        context = {'email_form': form}
+        return render(request, 'index.html', context)

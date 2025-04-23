@@ -26,6 +26,8 @@
       --tag-bg: rgba(65, 151, 222, 0.2);
       --tag-color: #4197DE;
       --formula-color: #666666;
+      --success-color: #2ecc71;
+      --error-color: #e74c3c;
     }
 
     [data-theme="dark"] {
@@ -38,6 +40,8 @@
       --tag-bg: rgba(100, 181, 255, 0.3);
       --tag-color: #e6f3ff;
       --formula-color: #66b3ff;
+      --success-color: #27ae60;
+      --error-color: #c0392b;
     }
 
     /* Отключение transition при начальной загрузке */
@@ -112,7 +116,88 @@
     .welcome-block p {
       font-size: 18px;
       color: var(--text-color);
-      margin-top: 0;
+      margin: 0 0 20px;
+    }
+
+    .email-form {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .email-form input[type="email"] {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid var(--accent-color);
+      border-radius: 5px;
+      background: var(--background-color);
+      color: var(--text-color);
+      width: 250px;
+      transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
+    }
+
+    .email-form input[type="email"]:focus {
+      outline: none;
+      border-color: var(--tag-color);
+      box-shadow: 0 0 5px rgba(65, 151, 222, 0.5);
+    }
+
+    .email-form button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: var(--accent-color);
+      color: var(--link-color);
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    .email-form button:hover {
+      background: var(--tag-color);
+      transform: scale(1.05);
+    }
+
+    .email-form button .icon {
+      font-size: 16px;
+    }
+
+    .email-error {
+      color: var(--error-color);
+      font-size: 14px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .form-error {
+      color: var(--error-color);
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .messages {
+      margin-top: 15px;
+    }
+
+    .messages .success {
+      color: var(--success-color);
+      font-size: 14px;
+      padding: 10px;
+      border-radius: 5px;
+      background: rgba(46, 204, 113, 0.1);
+    }
+
+    .messages .error {
+      color: var(--error-color);
+      font-size: 14px;
+      padding: 10px;
+      border-radius: 5px;
+      background: rgba(231, 76, 60, 0.1);
     }
 
     .logo a {
@@ -312,6 +397,15 @@
       body::before {
         background-size: 300px 300px;
       }
+
+      .email-form {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .email-form input[type="email"] {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -344,8 +438,28 @@
     </nav>
   </header>
   <div class="welcome-block">
-    <h1>Привет, {{ user.username }} 👋</h1>
+    <h1>Привет, {{ user.username|default:"Гость" }} 👋</h1>
     <p>Рады видеть тебя снова!</p>
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <div class="{{ message.tags }}">{{ message }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% if user.is_authenticated %}
+      <form action="{% url 'update_email' %}" method="post" class="email-form">
+        {% csrf_token %}
+        {{ email_form.email }}
+        {% if email_form.email.errors %}
+          <div class="form-error">{{ email_form.email.errors.as_text }}</div>
+        {% endif %}
+        <button type="submit">
+          <i class="fa-solid fa-envelope icon"></i> Сохранить
+        </button>
+      </form>
+      <div class="email-error" id="emailError">Пожалуйста, введите корректный email</div>
+    {% endif %}
   </div>
 
   {% block content %}
@@ -389,6 +503,23 @@
           link.classList.add("active");
         }
       });
+
+      // Валидация email на стороне клиента
+      const emailForm = document.querySelector(".email-form");
+      if (emailForm) {
+        const emailInput = emailForm.querySelector("input[name='email']");
+        const emailError = document.getElementById("emailError");
+
+        emailForm.addEventListener("submit", (event) => {
+          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailPattern.test(emailInput.value)) {
+            event.preventDefault();
+            emailError.style.display = "block";
+          } else {
+            emailError.style.display = "none";
+          }
+        });
+      }
     });
   </script>
 </body>

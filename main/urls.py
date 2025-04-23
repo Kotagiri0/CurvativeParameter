@@ -12,7 +12,8 @@ from main.views import (
     calculations,
     create_table,
     delete_table,
-    profile
+    profile,
+    update_email  # Добавляем update_email
 )
 
 urlpatterns = [
@@ -26,4 +27,5 @@ urlpatterns = [
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),
     path('delete-table/<int:pk>/', delete_table, name='delete_table'),
+    path('update-email/', update_email, name='update_email'),  # Новый маршрут
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
