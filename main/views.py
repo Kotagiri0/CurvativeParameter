@@ -22,13 +22,11 @@ def graph_view(request):
     if request.method == 'POST':
         form = GraphForm(request.POST)
         if form.is_valid():
-            # Получаем выбранную таблицу и параметры
             table_id = int(form.cleaned_data['table_choice'])
             table = Table.objects.get(id=table_id)
             parameter_a = float(form.cleaned_data['parameter_a'])
             parameter_b = float(form.cleaned_data['parameter_b'])
 
-            # Создаем список точек для построения графика
             new_y = []
             new_x = np.linspace(0, 1, 10000)
 
@@ -44,7 +42,6 @@ def graph_view(request):
                 y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
                 new_y.append(y_value)
 
-            # Строим график
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.plot(new_x, new_y, color='red', marker='o', markersize=1)
             ax.scatter(xx, yy, color='b')
@@ -52,14 +49,12 @@ def graph_view(request):
             ax.set_ylabel('Ge')
             ax.grid(True)
 
-            # Сохраняем график в память
             buffer = BytesIO()
             plt.savefig(buffer, format='png')
             buffer.seek(0)
             image_png = buffer.getvalue()
             buffer.close()
 
-            # Кодируем изображение в base64 для отображения в HTML
             graphic = base64.b64encode(image_png).decode('utf-8')
 
             context = {
@@ -82,7 +77,11 @@ def databases(request):
 
 @login_required
 def profile(request):
-    context = {'username': request.user.username}
+    email_form = UpdateEmailForm(initial={'email': request.user.email})
+    context = {
+        'username': request.user.username,
+        'email_form': email_form
+    }
     return render(request, "profile.html", context)
 
 @login_required
@@ -122,12 +121,13 @@ def calculations(request):
         context = {}
     context["tables"] = tables
     print(f"Контекст:{context}")
-
     return render(request, 'calculations.html', context)
 
 @login_required
 def home_page(request):
-    return render(request, 'index.html')
+    email_form = UpdateEmailForm(initial={'email': request.user.email})
+    context = {'email_form': email_form}
+    return render(request, 'index.html', context)
 
 def register(request):
     if request.method == 'POST':
@@ -181,7 +181,6 @@ def create_table(request):
             point = Point.objects.create(x_value=x_value, y_value=y_value)
             table.points.add(point)
         return HttpResponseRedirect('/databases/')
-
     return render(request, 'create_table.html')
 
 @login_required
@@ -189,12 +188,16 @@ def update_email(request):
     if request.method == 'POST':
         form = UpdateEmailForm(request.POST)
         if form.is_valid():
-            request.user.email = form.cleaned_data['email']
+            email = form.cleaned_data['email']
+            if email != request.user.email and User.objects.filter(email=email).exists():
+                form.add_error('email', 'Этот email уже используется другим пользователем.')
+                context = {'email_form': form}
+                return render(request, 'index.html', context)
+            request.user.email = email
             request.user.save()
             messages.success(request, 'Ваш email успешно обновлен!')
             return redirect('home')
         else:
-            # Передаем форму с ошибками в шаблон
             context = {'email_form': form}
             return render(request, 'index.html', context)
     else:
