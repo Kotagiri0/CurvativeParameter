@@ -17,23 +17,16 @@
   </script>
   <style>
     :root {
-  --bg-color: #ffffff;
-  --text-color: #121212;
-  --tag-bg: #f1f3f5;
-  --tag-color: #333333;
-  --link-color: #555555;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #121212;
-    --text-color: #f5f5f5;
-    --tag-bg: #1e1e1e;
-    --tag-color: #f0f0f0;
-    --link-color: #bbbbbb;
-  }
-}
-
+      --background-color: #f5f7fa;
+      --text-color: #000000;
+      --header-bg: #4197DE;
+      --link-color: #ffffff;
+      --link-hover: #e0e0e0;
+      --accent-color: #4197DE;
+      --tag-bg: rgba(65, 151, 222, 0.2);
+      --tag-color: #4197DE;
+      --formula-color: #666666;
+    }
 
     [data-theme="dark"] {
       --background-color: #1a1a1a;
@@ -96,36 +89,31 @@
       z-index: 100;
       transition: background-color 0.3s ease;
     }
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  transition: background 0.3s ease, color 0.3s ease;
-}
 
-.welcome-block {
-  background: var(--tag-bg);
-  color: var(--tag-color);
-  padding: 30px;
-  margin: 40px auto;
-  border-radius: 20px;
-  max-width: 800px;
-  text-align: center;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s ease, color 0.3s ease;
-}
+    .welcome-block {
+      background: var(--tag-bg);
+      color: var(--tag-color);
+      padding: 30px;
+      margin: 40px auto;
+      border-radius: 20px;
+      max-width: 800px;
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
 
-.welcome-block h1 {
-  font-size: 36px;
-  margin-bottom: 10px;
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+    .welcome-block h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-.welcome-block p {
-  font-size: 18px;
-  color: var(--link-color);
-  margin-top: 0;
-}
+    .welcome-block p {
+      font-size: 18px;
+      color: var(--text-color);
+      margin-top: 0;
+    }
 
     .logo a {
       color: var(--link-color);
@@ -355,10 +343,10 @@ body {
       </button>
     </nav>
   </header>
-<div class="welcome-block">
-  <h1>Привет, {{ user.username }} 👋</h1>
-  <p>Рады видеть тебя снова!</p>
-</div>
+  <div class="welcome-block">
+    <h1>Привет, {{ user.username }} 👋</h1>
+    <p>Рады видеть тебя снова!</p>
+  </div>
 
   {% block content %}
   {% endblock %}
