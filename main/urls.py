@@ -12,7 +12,9 @@ from main.views import (
     calculations,
     create_table,
     delete_table,
-    profile
+    profile,
+    update_profile,
+    delete_result,
 )
 
 urlpatterns = [
@@ -22,8 +24,10 @@ urlpatterns = [
     path('logout/', logout_user, name='logout'),
     path('databases/', databases, name='databases'),
     path('profile/', profile, name='profile'),
+    path('profile/update/', update_profile, name='update_profile'),
+    path('profile/delete_result/<int:result_id>/', delete_result, name='delete_result'),
     path('graphs/', graph_view, name='graphs'),
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),
     path('delete-table/<int:pk>/', delete_table, name='delete_table'),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

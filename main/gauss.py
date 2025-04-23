@@ -50,7 +50,7 @@ def gauss(tables, table_ind):
         print(a, b, "gauss", table_ind)
 
     # Формирование данных для таблицы
-    l_x2, l_gmod, l_gexp, l_op, l_ap = [0.0], [0], [0], [100], [0]
+    l_x2, l_gmod, l_gexp, l_op, l_ap = [0.0], [0], [0], [0], [0]
     for el in l_points:
         x2, ge = el[0], el[1]
         l_x2.append(x2)
@@ -59,14 +59,14 @@ def gauss(tables, table_ind):
         l_op.append(round(abs((func(a, b, x2, tables, table_ind) - ge) / ge * 100), 1))
         l_ap.append(round(abs(func(a, b, x2, tables, table_ind) - ge)))
 
-    l_x2.append(0.0)
+    l_x2.append(1.0)
     l_gmod.append(0)
     l_gexp.append(0)
-    l_op.append(100)
+    l_op.append(0)
     l_ap.append(0)
 
     # Конец замера времени
     exec_time = time.time() - start_time
     print(f"Gauss completed in {exec_time:.3f} seconds with {count} iterations")
 
-    return a, b, count, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap
+    return a, b, count, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, round(sum(l_op)/len(l_op), 1)

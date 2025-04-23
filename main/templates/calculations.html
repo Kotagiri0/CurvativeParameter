@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Расчёты{% endblock %}
 
@@ -10,7 +11,7 @@
     <!-- Форма -->
     <div class="cp-calc-card">
       <h3>Настройки алгоритма</h3>
-      <form id="algoForm" method="post" class="cp-form">
+      <form id="algoForm" method="post" action="{% url 'calculations' %}" class="cp-form">
         {% csrf_token %}
         <div class="cp-form-content">
           <!-- Выбор алгоритма -->
@@ -19,9 +20,9 @@
             <select id="algorithm" name="algorithm">
               <option value="gauss">Метод Гаусса</option>
               <option value="gauss_step">Метод Гаусса с переменным шагом</option>
-              <option value="gradient">Градиентный спуск</option>
-              <option value="gradient_step">Шаговый градиентный спуск</option>
-              <option value="otzhig">Отжиг (simulated annealing)</option>
+              <option value="gradient">Метод градиентного спуска</option>
+              <option value="gradient_step">Метод градиентного спуска с переменным шагом</option>
+              <option value="otzhig">Метод отжига</option>
             </select>
           </div>
           <!-- Выбор таблицы -->
@@ -41,78 +42,19 @@
     </div>
 
     <!-- Параметры -->
-    {% if a and b or c and d or e and f or g and h or i and j %}
-      <div class="cp-calc-card">
-        <h3>Результаты оптимизации</h3>
-        <div class="cp-params-tags">
-          {% if a and b %}
-            <span class="cp-table-tag">Метод: Гаусс</span>
-            <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
-            <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
-          {% elif c and d %}
-            <span class="cp-table-tag">Метод: Гаусс с переменным шагом</span>
-            <span class="cp-table-tag">A<sub>12</sub> = {{ c }}</span>
-            <span class="cp-table-tag">A<sub>21</sub> = {{ d }}</span>
-          {% elif e and f %}
-            <span class="cp-table-tag">Метод: Градиентный спуск</span>
-            <span class="cp-table-tag">A<sub>12</sub> = {{ e }}</span>
-            <span class="cp-table-tag">A<sub>21</sub> = {{ f }}</span>
-          {% elif g and h %}
-            <span class="cp-table-tag">Метод: Шаговый градиентный спуск</span>
-            <span class="cp-table-tag">A<sub>12</sub> = {{ g }}</span>
-            <span class="cp-table-tag">A<sub>21</sub> = {{ h }}</span>
-          {% elif i and j %}
-            <span class="cp-table-tag">Метод: Отжиг</span>
-            <span class="cp-table-tag">A<sub>12</sub> = {{ i }}</span>
-            <span class="cp-table-tag">A<sub>21</sub> = {{ j }}</span>
-          {% endif %}
-          <span class="cp-table-tag">Итераций: {{ iterations }}</span>
-          <span class="cp-table-tag">Время: {{ exec_time }}</span>
-        </div>
-
-        <!-- Таблица результатов для метода отжига -->
-        {% if table_data %}
-          <button class="cp-table-toggle" onclick="toggleTable(this)">
-            <span>Показать таблицу результатов</span>
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="cp-table-container">
-            <h4>Таблица результатов</h4>
-            <table class="cp-result-table">
-              <thead>
-                <tr>
-                  <th>x<sub>2</sub> (моль)</th>
-                  <th>G<sup>e</sup> mod (Дж*моль<sup>-1</sup>)</th>
-                  <th>G<sup>e</sup> exp (Дж*моль<sup>-1</sup>)</th>
-                  <th>σ (%)</th>
-                  <th>δ (Дж*моль<sup>-1</sup>)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in table_data %}
-                  <tr>
-                    <td>{{ row.x2|floatformat:3 }}</td>
-                    <td>{{ row.gmod }}</td>
-                    <td>{{ row.gexp }}</td>
-                    <td>{{ row.sigma }}</td>
-                    <td>{{ row.delta }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% endif %}
-
-        <a href="{% url 'graphs' %}" class="cp-btn cp-btn-primary cp-btn-graphs">
-          <i class="fas fa-chart-line"></i> Перейти к графикам
-        </a>
-      </div>
-    {% endif %}
+    <div class="cp-calc-card" id="resultsContainer" style="display: none;">
+      <h3>Результаты оптимизации</h3>
+      <div class="cp-params-tags" id="paramsTags"></div>
+      <div id="tableContainer"></div>
+      <a href="{% url 'graphs' %}" class="cp-btn cp-btn-primary cp-btn-graphs">
+        <i class="fas fa-chart-line"></i> Перейти к графикам
+      </a>
+    </div>
   </div>
 
   <!-- Оверлей с гифкой загрузки -->
   <div class="cp-loading-overlay" id="loadingOverlay">
-    <img src="https://example.com/penguin-whip.gif" alt="Пингвинчик получает плетью" class="cp-loading-gif" />
+    <img src="{% static 'images/loading.gif' %}" alt="Загрузка" class="cp-loading-gif" />
   </div>
 </section>
 
@@ -253,7 +195,7 @@
     background: var(--accent-color);
     color: white;
     border: none;
-    width: calc(100% - 20px); /* Учитываем внутренние отступы карточки */
+    width: calc(100% - 20px);
     justify-content: center;
     margin-left: 10px;
     margin-right: 10px;
@@ -373,7 +315,7 @@
 
   /* Кнопка сворачивания/разворачивания таблицы */
   .cp-table-toggle {
-    width: calc(100% - 20px); /* Учитываем внутренние отступы карточки */
+    width: calc(100% - 20px);
     background: var(--accent-color);
     color: white;
     padding: 10px;
@@ -425,6 +367,7 @@
     max-width: 200px;
     max-height: 200px;
     border-radius: 10px;
+    object-fit: contain;
   }
 
   /* Анимации */
@@ -500,31 +443,171 @@
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('algoForm');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const paramsTags = document.getElementById('paramsTags');
+    const tableContainer = document.getElementById('tableContainer');
 
-    form.addEventListener('submit', (e) => {
-      // Показать оверлей с гифкой
-      loadingOverlay.classList.add('active');
-
-      // Имитация задержки (замени на реальный AJAX-запрос)
-      setTimeout(() => {
-        loadingOverlay.classList.remove('active');
-      }, 5000); // 5 секунд для теста, настрой под сервер
+    tableContainer.addEventListener('click', (e) => {
+      if (e.target.closest('.cp-table-toggle')) {
+        const button = e.target.closest('.cp-table-toggle');
+        toggleTable(button);
+      }
     });
-  });
 
-  function toggleTable(button) {
-    const content = button.nextElementSibling;
-    const icon = button.querySelector('i');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loadingOverlay.classList.add('active');
+      resultsContainer.style.display = 'none';
 
-    if (content.classList.contains('open')) {
-      content.classList.remove('open');
-      button.querySelector('span').textContent = 'Показать таблицу результатов';
-      button.classList.remove('open');
-    } else {
-      content.classList.add('open');
-      button.querySelector('span').textContent = 'Скрыть таблицу';
-      button.classList.add('open');
+      try {
+        const formData = new FormData(form);
+        console.log('Отправка запроса на:', form.action);
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+          },
+        });
+
+        console.log('Статус ответа:', response.status);
+        const text = await response.text();
+        console.log('Текст ответа:', text);
+
+        let data;
+        try {
+          data = JSON.parse(text);
+          console.log('Разобранные данные:', data);
+        } catch (jsonError) {
+          console.error('Ошибка парсинга JSON:', jsonError);
+          throw new Error('Сервер вернул невалидный JSON');
+        }
+
+        if (response.ok) {
+          updateResults(data);
+          resultsContainer.style.display = 'block';
+        } else {
+          console.error('Ошибка сервера:', response.status, data);
+          alert(`Ошибка сервера: ${data.error || 'Неизвестная ошибка'}`);
+        }
+      } catch (error) {
+        console.error('Ошибка запроса:', error);
+        alert(`Произошла ошибка: ${error.message}`);
+      } finally {
+        loadingOverlay.classList.remove('active');
+      }
+    });
+
+    function updateResults(data) {
+      paramsTags.innerHTML = '';
+      tableContainer.innerHTML = '';
+
+      const methodNames = {
+        gauss: 'Гаусс',
+        gauss_step: 'Гаусс с переменным шагом',
+        gradient: 'Градиентный спуск',
+        gradient_step: 'Шаговый градиентный спуск',
+        otzhig: 'Отжиг'
+      };
+
+      if (data.algorithm && methodNames[data.algorithm]) {
+        paramsTags.innerHTML += `<span class="cp-table-tag">Метод: ${methodNames[data.algorithm]}</span>`;
+      }
+
+      if (data.a && data.b) {
+        paramsTags.innerHTML += `
+          <span class="cp-table-tag">A<sub>12</sub> = ${data.a}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = ${data.b}</span>
+        `;
+      } else if (data.c && data.d) {
+        paramsTags.innerHTML += `
+          <span class="cp-table-tag">A<sub>12</sub> = ${data.c}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = ${data.d}</span>
+        `;
+      } else if (data.e && data.f) {
+        paramsTags.innerHTML += `
+          <span class="cp-table-tag">A<sub>12</sub> = ${data.e}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = ${data.f}</span>
+        `;
+      } else if (data.g && data.h) {
+        paramsTags.innerHTML += `
+          <span class="cp-table-tag">A<sub>12</sub> = ${data.g}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = ${data.h}</span>
+        `;
+      } else if (data.i && data.j) {
+        paramsTags.innerHTML += `
+          <span class="cp-table-tag">A<sub>12</sub> = ${data.i}</span>
+          <span class="cp-table-tag">A<sub>21</sub> = ${data.j}</span>
+        `;
+      } else {
+        console.warn('Параметры A12 и A21 не найдены в ответе');
+      }
+
+      paramsTags.innerHTML += `
+        <span class="cp-table-tag">Итераций: ${data.iterations || 'N/A'}</span>
+        <span class="cp-table-tag">Время: ${data.exec_time || 'N/A'}</span>
+      `;
+
+      if (data.table_data && Array.isArray(data.table_data) && data.table_data.length > 0) {
+        console.log('Table data:', data.table_data); // Для отладки
+        tableContainer.innerHTML = `
+          <button class="cp-table-toggle">
+            <span>Показать таблицу результатов</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="cp-table-container">
+            <h4>Таблица результатов</h4>
+            <table class="cp-result-table">
+              <thead>
+                <tr>
+                  <th>x<sub>2</sub> (моль)</th>
+                  <th>G<sup>e</sup> mod (Дж*моль<sup>-1</sup>)</th>
+                  <th>G<sup>e</sup> exp (Дж*моль<sup>-1</sup>)</th>
+                  <th>σ (%)</th>
+                  <th>δ (Дж*моль<sup>-1</sup>)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.table_data.map(row => `
+                  <tr>
+                    <td>${(row.x2 || 0).toFixed(3)}</td>
+                    <td>${row.gmod === null || row.gmod === undefined ? 'N/A' : Number(row.gmod).toFixed(2)}</td>
+                    <td>${row.gexp === null || row.gexp === undefined ? 'N/A' : Number(row.gexp).toFixed(2)}</td>
+                    <td>${row.sigma === null || row.sigma === undefined ? 'N/A' : Number(row.sigma).toFixed(1)}</td>
+                    <td>${row.delta === null || row.delta === undefined ? 'N/A' : Number(row.delta).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
     }
-  }
+
+    function toggleTable(button) {
+      const content = button.nextElementSibling;
+      if (!content) {
+        console.error('Контейнер таблицы не найден');
+        return;
+      }
+      const icon = button.querySelector('i');
+      if (!icon) {
+        console.error('Иконка не найдена');
+        return;
+      }
+
+      console.log('Тоггл таблицы:', content.classList.contains('open') ? 'Скрыть' : 'Показать');
+
+      if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        button.querySelector('span').textContent = 'Показать таблицу результатов';
+        button.classList.remove('open');
+      } else {
+        content.classList.add('open');
+        button.querySelector('span').textContent = 'Скрыть таблицу';
+        button.classList.add('open');
+      }
+    }
+  });
 </script>
 {% endblock %}

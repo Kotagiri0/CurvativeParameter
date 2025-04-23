@@ -1,15 +1,19 @@
 import base64
 import math
+import traceback
+
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from .forms import RegisterForm, LoginForm, GraphForm
-from .models import Point, Table
+from .forms import RegisterForm, LoginForm, GraphForm, UserUpdateForm, ProfileUpdateForm
+from .models import Point, Table, CalculationResult, Profile
 from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
@@ -17,31 +21,45 @@ param_a, param_b = 0, 0
 
 @login_required
 def graph_view(request):
-    # Получаем параметры из сессии
-    param_a = request.session.get('param_a', None)
-    param_b = request.session.get('param_b', None)
+    # Get parameters from session
+    result_id = request.session.get('result_id')
+    table_id = request.session.get('table_id')
+    param_a = request.session.get('param_a')
+    param_b = request.session.get('param_b')
 
-    # Устанавливаем начальные значения формы
+    # Set initial form data
     initial_data = {}
-    if param_a is not None:
-        initial_data['parameter_a'] = round(param_a, 3)
-    if param_b is not None:
-        initial_data['parameter_b'] = round(param_b, 3)
+    if result_id:
+        try:
+            result = CalculationResult.objects.get(id=result_id)
+            initial_data = {
+                'table_choice': str(table_id) if table_id is not None else None,
+                'parameter_a': round(result.param_a, 3),
+                'parameter_b': round(result.param_b, 3),
+            }
+        except CalculationResult.DoesNotExist:
+            if table_id:
+                initial_data['table_choice'] = str(table_id)
+            if param_a is not None:
+                initial_data['parameter_a'] = round(param_a, 3)
+            if param_b is not None:
+                initial_data['parameter_b'] = round(param_b, 3)
 
     form = GraphForm(request.POST or None, initial=initial_data)
     context = {'form': form}
 
     if request.method == 'POST' and form.is_valid():
-        # Получаем выбранную таблицу и параметры
+        # Get form data
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
-        # Создаем список точек для построения графика
+
+
+        # Create plot data
         new_y = []
         new_x = np.linspace(0, 1, 10000)
-
         xx = []
         yy = []
         for point in table.points.all():
@@ -54,23 +72,24 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
-        # Строим график
+        # Build the graph
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(new_x, new_y, color='red', marker='o', markersize=1)
         ax.scatter(xx, yy, color='b')
-        ax.set_xlabel('x2')
-        ax.set_ylabel('Ge')
+        plt.title(table.title[:-1])
+        ax.set_xlabel(r'$x_2$')
+        ax.set_ylabel(r'$G^{E}$')
         ax.grid(True)
 
-        # Сохраняем график в память
+        # Save graph to memory
         buffer = BytesIO()
-        plt.savefig(buffer, format='png')
+        plt.savefig(buffer, format='png', bbox_inches='tight')
         buffer.seek(0)
         image_png = buffer.getvalue()
         buffer.close()
         plt.close(fig)
 
-        # Кодируем изображение в base64
+        # Encode image to base64
         graphic = base64.b64encode(image_png).decode('utf-8')
 
         context.update({
@@ -79,7 +98,7 @@ def graph_view(request):
             'b': round(parameter_b, 3)
         })
 
-    # Добавляем параметры в контекст для отображения
+    # Add parameters to context for display
     if param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
@@ -93,24 +112,79 @@ def databases(request):
     return render(request, "databases.html", context)
 
 @login_required
-def profile(request):
-    if request.method == 'POST':
-        context = {
-            'username': request.user.username,
-            'password': request.user.password
-        }
-        return JsonResponse(context)
-    else:
-        context = {
-            'username': request.user.username,
-            'password': request.user.password
-        }
-        return JsonResponse(context)
+def delete_result(request, result_id):
+    result = get_object_or_404(CalculationResult, id=result_id)
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from .models import Table
-from . import gauss, gauss_step, gradient, gradient_step, otzhig
+    if request.user == result.user:
+        result.delete()
+
+    return redirect('profile')
+
+
+@login_required
+def profile(request):
+    context = {}
+    Profile.objects.get_or_create(user=request.user)
+    user_results = CalculationResult.objects.filter(user=request.user).order_by('-created_at')
+    if request.method == 'POST':
+        context['user_results'] = user_results
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            return redirect('profile')  # Имя URL для профиля
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = ProfileUpdateForm(instance=request.user.profile)
+
+    return render(request, 'profile.html', {
+        'user': request.user,
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'user_results': user_results
+    })
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        avatar = request.FILES.get('avatar')  # Получаем файл аватара из формы
+
+        user = request.user
+
+        # Проверка на уникальность имени пользователя
+        if User.objects.exclude(pk=user.pk).filter(username=username).exists():
+            messages.error(request, 'Имя пользователя уже занято.')
+            return redirect('profile')
+
+        # Проверка на уникальность email
+        if User.objects.exclude(pk=user.pk).filter(email=email).exists():
+            messages.error(request, 'Электронная почта уже используется.')
+            return redirect('profile')
+
+        try:
+            # Обновляем данные пользователя
+            user.username = username
+            user.email = email
+            user.save()
+
+            # Обновляем или создаем профиль с аватаром
+            profile, created = Profile.objects.get_or_create(user=user)
+            if avatar:  # Если аватар был загружен
+                profile.avatar = avatar
+                profile.save()
+
+            messages.success(request, 'Профиль успешно обновлен.')
+        except ValueError as e:
+            messages.error(request, f'Ошибка при обновлении профиля: {str(e)}')
+
+        return redirect('profile')
+
+    # Если метод не POST, перенаправляем на страницу профиля
+    return redirect('profile')
 
 @login_required
 def calculations(request):
@@ -118,120 +192,169 @@ def calculations(request):
     context = {"tables": tables}
 
     if request.method == 'POST':
-        algorithm = request.POST.get('algorithm')
-        table_id = int(request.POST.get('tabledata')) - 1
+        try:
+            algorithm = request.POST.get('algorithm')
+            table_id = int(request.POST.get('tabledata')) - 1
+            response_data = {
+                'algorithm': algorithm,
+                'iterations': 'N/A',
+                'exec_time': 'N/A',
+                'table_data': []
+            }
 
-        if algorithm == 'gauss':
-            gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap = gauss.gauss(tables, table_id)
-            request.session['param_a'] = gauss_a
-            request.session['param_b'] = gauss_b
-            table_data = [
-                {
-                    'x2': x2,
-                    'gmod': gmod,
-                    'gexp': gexp,
-                    'sigma': op,
-                    'delta': ap
-                }
-                for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-            ]
-            context.update({
-                'a': round(gauss_a, 3),
-                'b': round(gauss_b, 3),
-                'iterations': iterations or 'N/A',
-                'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                'table_data': table_data
-            })
+            # Логика для каждого алгоритма
+            if algorithm == 'gauss':
+                gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss.gauss(tables, table_id)
+                table_data = [
+                    {'x2': x2, 'gmod': gmod, 'gexp': gexp, 'sigma': op, 'delta': ap}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
 
-        elif algorithm == 'gauss_step':
-            gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap = gauss_step.gauss_step(tables, table_id)
-            request.session['param_a'] = gauss_step_a
-            request.session['param_b'] = gauss_step_b
-            table_data = [
-                {
-                    'x2': x2,
-                    'gmod': gmod,
-                    'gexp': gexp,
-                    'sigma': op,
-                    'delta': ap
-                }
-                for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-            ]
-            context.update({
-                'c': round(gauss_step_a, 3),
-                'd': round(gauss_step_b, 3),
-                'iterations': iterations or 'N/A',
-                'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                'table_data': table_data
-            })
+                result = CalculationResult.objects.create(
+                    user=request.user,
+                    title=tables[table_id].title,
+                    algorithm='Метод Гаусса',
+                    param_a=gauss_a,
+                    param_b=gauss_b,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time,
+                    table_data=table_data
+                )
 
-        elif algorithm == 'gradient':
-            gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap = gradient.gradient(tables, table_id)
-            request.session['param_a'] = gradient_a
-            request.session['param_b'] = gradient_b
-            table_data = [
-                {
-                    'x2': x2,
-                    'gmod': gmod,
-                    'gexp': gexp,
-                    'sigma': op,
-                    'delta': ap
-                }
-                for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-            ]
-            context.update({
-                'e': round(gradient_a, 3),
-                'f': round(gradient_b, 3),
-                'iterations': iterations or 'N/A',
-                'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                'table_data': table_data
-            })
+                response_data.update({
+                    'a': round(gauss_a, 3),
+                    'b': round(gauss_b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result.id
+                })
 
-        elif algorithm == 'gradient_step':
-            gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap = gradient_step.gradient_step(tables, table_id)
-            request.session['param_a'] = gradient_step_a
-            request.session['param_b'] = gradient_step_b
-            table_data = [
-                {
-                    'x2': x2,
-                    'gmod': gmod,
-                    'gexp': gexp,
-                    'sigma': op,
-                    'delta': ap
-                }
-                for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-            ]
-            context.update({
-                'g': round(gradient_step_a, 3),
-                'h': round(gradient_step_b, 3),
-                'iterations': iterations or 'N/A',
-                'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                'table_data': table_data
-            })
+            elif algorithm == 'gauss_step':
+                gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss_step.gauss_step(tables, table_id)
+                table_data = [
+                    {'x2': x2, 'gmod': gmod, 'gexp': gexp, 'sigma': op, 'delta': ap}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
 
-        elif algorithm == 'otzhig':
-            otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap = otzhig.otzhig(tables, table_id)
-            request.session['param_a'] = otzhig_a
-            request.session['param_b'] = otzhig_b
-            table_data = [
-                {
-                    'x2': x2,
-                    'gmod': gmod,
-                    'gexp': gexp,
-                    'sigma': op,
-                    'delta': ap
-                }
-                for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-            ]
-            context.update({
-                'i': round(otzhig_a, 3),
-                'j': round(otzhig_b, 3),
-                'iterations': iterations or 'N/A',
-                'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                'table_data': table_data
-            })
+                result = CalculationResult.objects.create(
+                    user=request.user,
+                    title=tables[table_id].title,
+                    algorithm='Метод Гаусса с переменным шагом',
+                    param_a=gauss_step_a,
+                    param_b=gauss_step_b,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time,
+                    table_data=table_data
+                )
 
-    print(f"Контекст: {context}")
+                response_data.update({
+                    'c': round(gauss_step_a, 3),
+                    'd': round(gauss_step_b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result.id
+                })
+
+            elif algorithm == 'gradient':
+                gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient.gradient(tables, table_id)
+                table_data = [
+                    {'x2': x2, 'gmod': gmod, 'gexp': gexp, 'sigma': op, 'delta': ap}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
+
+                result = CalculationResult.objects.create(
+                    user=request.user,
+                    title=tables[table_id].title,
+                    algorithm='Метод градиентного спуска',
+                    param_a=gradient_a,
+                    param_b=gradient_b,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time,
+                    table_data=table_data
+                )
+
+                response_data.update({
+                    'e': round(gradient_a, 3),
+                    'f': round(gradient_b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result.id
+                })
+
+            elif algorithm == 'gradient_step':
+                gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient_step.gradient_step(tables, table_id)
+                table_data = [
+                    {'x2': x2, 'gmod': gmod, 'gexp': gexp, 'sigma': op, 'delta': ap}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
+
+                result = CalculationResult.objects.create(
+                    user=request.user,
+                    title=tables[table_id].title,
+                    algorithm='Метод градиентного спуска с переменным шагом',
+                    param_a=gradient_step_a,
+                    param_b=gradient_step_b,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time,
+                    table_data=table_data
+                )
+
+                response_data.update({
+                    'g': round(gradient_step_a, 3),
+                    'h': round(gradient_step_b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result.id
+                })
+
+            elif algorithm == 'otzhig':
+                otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = otzhig.otzhig(tables, table_id)
+                table_data = [
+                    {'x2': x2, 'gmod': gmod, 'gexp': gexp, 'sigma': op, 'delta': ap}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
+
+                result = CalculationResult.objects.create(
+                    user=request.user,
+                    title=tables[table_id].title,
+                    algorithm='Метод симуляции отжига',
+                    param_a=otzhig_a,
+                    param_b=otzhig_b,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time,
+                    table_data=table_data
+                )
+
+                response_data.update({
+                    'i': round(otzhig_a, 3),
+                    'j': round(otzhig_b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result.id
+                })
+
+            # Сохранение в сессии (если нужно)
+            request.session['param_a'] = response_data.get('a') or response_data.get('c') or response_data.get('e') or response_data.get('g') or response_data.get('i')
+            request.session['param_b'] = response_data.get('b') or response_data.get('d') or response_data.get('f') or response_data.get('h') or response_data.get('j')
+            request.session['result_id'] = result.id
+            request.session['table_choice'] = table_id
+            request.session.modified = True
+
+            return JsonResponse(response_data)
+        except Exception as e:
+            print(traceback.format_exc())  # Логирование ошибки
+            return JsonResponse({'error': str(e)}, status=500)
+
     return render(request, 'calculations.html', context)
 
 @login_required

@@ -45,8 +45,8 @@ def gradient(tables, table_ind):
     for point in tables[table_ind].points.all():
         l_points.append((point.x_value, point.y_value))
 
-    l_param = [1, 1]
-    eps = 0.0001
+    l_param = [0, 0]
+    eps = 0.00001
     d = 0.01
     count = 0
     flag = True
@@ -66,7 +66,7 @@ def gradient(tables, table_ind):
         count += 1
 
     # Формирование данных для таблицы
-    l_x2, l_gmod, l_gexp, l_op, l_ap = [0.0], [0], [0], [100], [0]
+    l_x2, l_gmod, l_gexp, l_op, l_ap = [0.0], [0], [0], [0], [0]
     for el in l_points:
         x2, ge = el[0], el[1]
         l_x2.append(x2)
@@ -75,14 +75,13 @@ def gradient(tables, table_ind):
         l_op.append(round(abs((func(l_param, x2, tables, table_ind) - ge) / ge * 100), 1))
         l_ap.append(round(abs(func(l_param, x2, tables, table_ind) - ge)))
 
-    l_x2.append(0.0)
+    l_x2.append(1.0)
     l_gmod.append(0)
     l_gexp.append(0)
-    l_op.append(100)
+    l_op.append(0)
     l_ap.append(0)
-
     # Конец замера времени
     exec_time = time.time() - start_time
     print(f"Gradient completed in {exec_time:.3f} seconds with {count} iterations")
 
-    return l_param[0], l_param[1], count, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap
+    return l_param[0], l_param[1], count, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, round(sum(l_op)/len(l_op), 1)
