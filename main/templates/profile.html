@@ -78,13 +78,13 @@
                         <div class="cp-result-header">
                             <h3>{{ result.title }}</h3>
                             <div class="cp-method-info">
-                                <span class="cp-method-name">{{ result.algorithm }}</span>
+                                <span class="cp-method-name">{{ result.algorithm|default:"Не указан" }}</span>
                                 <span class="cp-params">
                                     A<sub>12</sub> = {{ result.param_a|floatformat:3 }},
                                     A<sub>21</sub> = {{ result.param_b|floatformat:3 }}
                                 </span>
                                 <span class="cp-iterations">Итераций: {{ result.iterations }}</span>
-                                <span class="cp-average-op">Средняя относительная погрешность: {{ result.average_op }}</span>
+                                <span class="cp-average-op">Средняя относительная погрешность: {{ result.average_op|floatformat:1 }}%</span>
                             </div>
                             <div class="cp-time-info">
                                 Время: {{ result.exec_time|floatformat:1 }} сек
@@ -93,6 +93,9 @@
                                 <button class="cp-toggle-details" data-result-id="{{ result.id }}">
                                     Показать таблицу
                                 </button>
+                                <a href="{% url 'share_calculation' result.id %}" class="cp-share-btn">
+                                    <i class="fas fa-share"></i> Поделиться
+                                </a>
                                 <form action="{% url 'delete_result' result.id %}" method="POST" class="cp-delete-form" onsubmit="return confirm('Вы уверены, что хотите удалить этот результат?');">
                                     {% csrf_token %}
                                     <button type="submit" class="cp-delete-btn"><i class="fas fa-trash-alt"></i> Удалить</button>
@@ -114,15 +117,23 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for row in result.table_data %}
-                                        <tr>
-                                            <td>{{ row.x2|floatformat:3 }}</td>
-                                            <td>{{ row.gmod|floatformat:0 }}</td>
-                                            <td>{{ row.gexp|floatformat:0 }}</td>
-                                            <td>{{ row.sigma|floatformat:1 }}</td>
-                                            <td>{{ row.delta|floatformat:0 }}</td>
-                                        </tr>
-                                        {% endfor %}
+                                        {% with table_data=result.get_table_data %}
+                                            {% if table_data %}
+                                                {% for row in table_data %}
+                                                    <tr>
+                                                        <td>{{ row.x2|floatformat:3 }}</td>
+                                                        <td>{{ row.gmod|floatformat:0 }}</td>
+                                                        <td>{{ row.gexp|floatformat:0 }}</td>
+                                                        <td>{{ row.sigma|floatformat:1 }}</td>
+                                                        <td>{{ row.delta|floatformat:0 }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="5">Нет данных</td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endwith %}
                                     </tbody>
                                 </table>
                             </div>
@@ -424,7 +435,7 @@
         transition: opacity 0.3s ease;
         font-size: 0.9em;
         font-weight: 500;
-        gap: яpx;
+        gap: 5px;
     }
 
     .cp-avatar-label:hover .cp-avatar-overlay {
@@ -601,6 +612,29 @@
         background-color: var(--button-hover);
         border-color: var(--button-hover);
         box-shadow: 0 2px 8px var(--button-shadow);
+    }
+
+    .cp-share-btn {
+        background-color: var(--accent-color);
+        color: white;
+        border: 2px solid var(--accent-color);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        text-decoration: none;
+    }
+
+    .cp-share-btn:hover {
+        background-color: var(--button-hover);
+        border-color: var(--button-hover);
+        box-shadow: 0 2px 8px var(--button-shadow);
+        transform: translateY(-1px);
     }
 
     .cp-delete-btn {

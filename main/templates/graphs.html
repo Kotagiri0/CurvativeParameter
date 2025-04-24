@@ -10,9 +10,33 @@
     <!-- Форма -->
     <div class="cp-graph-card">
       <h3>Параметры графика</h3>
-      <form method="post" class="cp-form">
+      {% if form.table_choice.value %}
+        {% with table_id=form.table_choice.value %}
+          {% for table in form.fields.table_choice.choices %}
+            {% if table.0 == table_id %}
+              <p class="cp-current-table">Текущая таблица: <strong>{{ table.1 }}</strong></p>
+            {% endif %}
+          {% endfor %}
+        {% endwith %}
+      {% endif %}
+
+      <form method="post" class="cp-form" id="graphForm">
         {% csrf_token %}
         <div class="cp-form-content">
+          <!-- Отображение ошибок формы -->
+          {% if form.errors %}
+            <div class="cp-form-errors">
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <p class="cp-error">{{ field.label }}: {{ error }}</p>
+                {% endfor %}
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <p class="cp-error">{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
           <div class="cp-form-group">
             <label for="{{ form.table_choice.id_for_label }}">Выберите таблицу:</label>
             {{ form.table_choice }}
@@ -27,9 +51,12 @@
           </div>
           <input type="hidden" name="theme" id="themeInput">
         </div>
-        <button type="submit" class="cp-btn cp-btn-primary">
+        <button type="submit" class="cp-btn cp-btn-primary" id="submitButton">
           <i class="fas fa-play"></i> Построить график
         </button>
+        <div class="cp-loading" id="loadingSpinner" style="display: none;">
+          <i class="fas fa-spinner fa-spin"></i> Построение графика...
+        </div>
       </form>
     </div>
 
@@ -44,6 +71,11 @@
           <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
           <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
         </div>
+
+        <!-- Кнопка "Поделиться" -->
+        <a href="{% url 'share_calculation' result_id %}" class="cp-btn cp-btn-primary" style="margin-top: 15px;">
+          <i class="fas fa-share"></i> Поделиться на форуме
+        </a>
 
         <!-- Информация о графике (аккордеон) -->
         <button class="cp-info-toggle" onclick="toggleInfo(this)">
@@ -69,62 +101,6 @@
     {% endif %}
   </div>
 </section>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const themeInput = document.getElementById("themeInput");
-    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-    themeInput.value = currentTheme;
-
-    const graphicImg = document.querySelector(".cp-graphic-img");
-    const modal = document.getElementById("graphicModal");
-    const modalContent = document.querySelector(".cp-modal-content");
-
-    if (graphicImg && modal) {
-      // Открытие модального окна при клике на график
-      graphicImg.addEventListener("click", function() {
-        modal.classList.add("open");
-        document.body.style.overflow = "hidden"; // Отключаем прокрутку
-      });
-
-      // Закрытие по клику вне области модального контента
-      modal.addEventListener("click", function(event) {
-        if (!modalContent.contains(event.target)) {
-          closeModal();
-        }
-      });
-
-      // Закрытие по нажатию Escape
-      document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape" && modal.classList.contains("open")) {
-          closeModal();
-        }
-      });
-    }
-  });
-
-  function toggleInfo(button) {
-    const content = button.nextElementSibling;
-    const icon = button.querySelector("i");
-
-    if (content.classList.contains("open")) {
-      content.classList.remove("open");
-      button.querySelector("span").textContent = "О графике";
-      button.classList.remove("open");
-    } else {
-      content.classList.add("open");
-      button.querySelector("span").textContent = "Скрыть";
-      button.classList.add("open");
-    }
-  }
-
-  // Закрытие модального окна
-  function closeModal() {
-    const modal = document.getElementById("graphicModal");
-    modal.classList.remove("open");
-    document.body.style.overflow = "auto"; // Включаем прокрутку
-  }
-</script>
 
 <style>
   /* Основные стили */
@@ -179,6 +155,17 @@
     color: var(--text-color);
   }
 
+  .cp-current-table {
+    font-size: 0.95rem;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .cp-current-table strong {
+    color: var(--accent-color);
+  }
+
   .cp-form {
     display: flex;
     flex-direction: column;
@@ -190,6 +177,25 @@
     margin-bottom: 15px;
     padding: 0 10px;
     box-sizing: border-box;
+  }
+
+  .cp-form-errors {
+    background: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+
+  [data-theme="dark"] .cp-form-errors {
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.4);
+  }
+
+  .cp-error {
+    color: #ff3333;
+    font-size: 0.9rem;
+    margin: 5px 0;
   }
 
   .cp-form-group {
@@ -204,35 +210,47 @@
   }
 
   .cp-form-group select,
-  .cp-form-group input[type="number"] {
+  .cp-form-group input[type="number"],
+  .cp-form-group input[type="text"],
+  .cp-form-group textarea,
+  .cp-form-group input[type="file"] {
     width: 100%;
     max-width: 100%;
     padding: 8px 12px;
     font-size: 0.9rem;
     border: 2px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 2525, 0.2);
     color: var(--text-color);
     transition: border-color 0.3s, background 0.3s;
     box-sizing: border-box;
   }
 
   [data-theme="dark"] .cp-form-group select,
-  [data-theme="dark"] .cp-form-group input[type="number"] {
+  [data-theme="dark"] .cp-form-group input[type="number"],
+  [data-theme="dark"] .cp-form-group input[type="text"],
+  [data-theme="dark"] .cp-form-group textarea,
+  [data-theme="dark"] .cp-form-group input[type="file"] {
     border: 2px solid rgba(255, 255, 255, 0.1);
     background: rgba(30, 30, 30, 0.7);
     color: var(--tag-color);
   }
 
   .cp-form-group select:focus,
-  .cp-form-group input[type="number"]:focus {
+  .cp-form-group input[type="number"]:focus,
+  .cp-form-group input[type="text"]:focus,
+  .cp-form-group textarea:focus,
+  .cp-form-group input[type="file"]:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.3);
     outline: none;
   }
 
   [data-theme="dark"] .cp-form-group select:focus,
-  [data-theme="dark"] .cp-form-group input[type="number"]:focus {
+  [data-theme="dark"] .cp-form-group input[type="number"]:focus,
+  [data-theme="dark"] .cp-form-group input[type="text"]:focus,
+  [data-theme="dark"] .cp-form-group textarea:focus,
+  [data-theme="dark"] .cp-form-group input[type="file"]:focus {
     background: rgba(50, 50, 50, 0.7);
   }
 
@@ -247,97 +265,122 @@
   }
 
   .cp-btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
     border-radius: 8px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
     cursor: pointer;
-    text-decoration: none;
+    transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
   }
 
   .cp-btn-primary {
     background: var(--accent-color);
-    color: white;
-    border: none;
-    width: 100%;
+    color: #fff;
+    border: 2px solid var(--accent-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .cp-btn-primary:hover {
-    background: var(--link-hover);
-    transform: scale(1.05);
+    background: var(--button-hover);
+    border-color: var(--button-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-color);
+    font-size: 1rem;
+    margin-top: 15px;
+  }
+
+  .cp-loading i {
+    font-size: 1.2rem;
+    color: var(--accent-color);
   }
 
   .cp-graphic-container {
-    margin-top: 15px;
+    margin: 20px 0;
     text-align: center;
-    overflow: hidden;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
-    cursor: pointer;
   }
 
-  [data-theme="dark"] .cp-graphic-container {
+  .cp-graphic-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-graphic-img {
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  .cp-graphic-container:hover {
+  .cp-graphic-img:hover {
     transform: scale(1.02);
-  }
-
-  .cp-graphic-container img {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-    display: block;
-    transition: opacity 0.3s;
-  }
-
-  .cp-graphic-container img:hover {
-    opacity: 0.9;
   }
 
   .cp-params-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 15px;
+    margin: 15px 0;
     justify-content: center;
   }
 
   .cp-table-tag {
-    background: var(--tag-bg);
-    color: var(--tag-color);
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-color);
     padding: 5px 10px;
-    border-radius: 20px;
+    border-radius: 5px;
     font-size: 0.9rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-table-tag {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .cp-info-toggle {
     width: 100%;
-    background: var(--accent-color);
-    color: white;
-    padding: 10px;
-    border: none;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-color);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 10px 15px;
     border-radius: 8px;
+    font-size: 1rem;
     cursor: pointer;
+    transition: background 0.3s, border-color 0.3s;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.95rem;
-    transition: background 0.3s, transform 0.3s;
     margin-top: 15px;
   }
 
-  .cp-info-toggle:hover {
-    background: var(--link-hover);
-    transform: scale(1.02);
+  [data-theme="dark"] .cp-info-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .cp-info-toggle:hover,
+  .cp-info-toggle.open {
+    background: rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-color);
+  }
+
+  [data-theme="dark"] .cp-info-toggle:hover,
+  [data-theme="dark"] .cp-info-toggle.open {
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .cp-info-toggle i {
+    color: var(--accent-color);
     transition: transform 0.3s;
   }
 
@@ -346,39 +389,42 @@
   }
 
   .cp-info-content {
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.4s ease-out, padding 0.3s ease;
-    padding: 0;
+    display: none;
     margin-top: 10px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--text-color);
+  }
+
+  [data-theme="dark"] .cp-info-content {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .cp-info-content.open {
-    max-height: 600px;
-    padding: 15px 0;
-    transition: max-height 0.4s ease-in, padding 0.3s ease;
+    display: block;
+    animation: slideDown 0.3s ease-out;
   }
 
   .cp-info-content p {
-    margin: 10px 0;
-    font-size: 0.95rem;
-    color: var(--text-color);
-    line-height: 1.5;
-  }
-
-  .cp-info-content p strong {
-    color: var(--accent-color);
+    margin: 0 0 10px;
   }
 
   .cp-info-content code {
-    background: var(--tag-bg);
-    color: var(--tag-color);
+    background: rgba(0, 0, 0, 0.1);
     padding: 2px 5px;
     border-radius: 4px;
-    font-size: 0.9rem;
+    color: var(--accent-color);
   }
 
-  /* Стили для модального окна */
+  [data-theme="dark"] .cp-info-content code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Модальное окно */
   .cp-modal {
     display: none;
     position: fixed;
@@ -386,148 +432,254 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.7);
     z-index: 1000;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
   }
 
   .cp-modal.open {
     display: flex;
-    opacity: 1;
+    animation: fadeIn 0.3s ease-out;
   }
 
   .cp-modal-content {
     position: relative;
     max-width: 90%;
     max-height: 90vh;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(10px);
-    transform: scale(0.7);
-    transition: transform 0.3s ease;
-    overflow: hidden;
-  }
-
-  [data-theme="dark"] .cp-modal-content {
-    background: rgba(30, 30, 30, 0.5);
-  }
-
-  .cp-modal.open .cp-modal-content {
-    transform: scale(1);
+    background: transparent;
+    border-radius: 10px;
+    overflow: auto;
+    animation: scaleIn 0.3s ease-out;
   }
 
   .cp-modal-img {
     max-width: 100%;
     max-height: 80vh;
     border-radius: 10px;
-    display: block;
-    margin: 0 auto;
-    z-index: 1;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-modal-img {
+    border: 2px solid rgba(255, 255, 255, 0.1);
   }
 
   .cp-modal-close {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: var(--accent-color);
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
     border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    z-index: 10;
-  }
-
-  [data-theme="light"] .cp-modal-close:hover {
-    background-color: #005f73; /* Тёмный акцентный цвет для светлой темы */
-    transform: rotate(90deg);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
-  }
-
-  [data-theme="dark"] .cp-modal-close:hover {
-    background-color: var(--link-hover); /* Сохраняем поведение тёмной темы */
-    transform: rotate(90deg);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
-  }
-
-  .cp-modal-close i {
     font-size: 1.2rem;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .cp-modal-close:hover {
+    background: rgba(0, 0, 0, 0.7);
+    transform: rotate(90deg);
   }
 
   /* Анимации */
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   /* Адаптивность */
-  @media (max-width: 992px) {
-    .cp-graphs-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .cp-modal-content {
-      max-width: 95%;
-      padding: 20px;
-    }
-  }
-
   @media (max-width: 768px) {
     .cp-section {
       padding: 0 3%;
+    }
+
+    .cp-graphs-grid {
+      grid-template-columns: 1fr;
     }
 
     .cp-graph-card {
       padding: 15px;
     }
 
+    .cp-section h2 {
+      font-size: 1.5rem;
+    }
+
     .cp-graph-card h3 {
       font-size: 1.2rem;
     }
 
-    .cp-form-content {
-      padding: 0 5px;
-    }
-
-    .cp-form-group select,
-    .cp-form-group input[type="number"] {
-      font-size: 0.85rem;
-    }
-
-    .cp-btn-primary,
-    .cp-info-toggle {
-      padding: 10px 20px;
-    }
-
-    .cp-info-content p {
+    .cp-form-group label {
       font-size: 0.9rem;
     }
 
-    .cp-modal-content {
-      padding: 15px;
+    .cp-form-group select,
+    .cp-form-group input[type="number"],
+    .cp-form-group input[type="text"],
+    .cp-form-group textarea {
+      font-size: 0.85rem;
+    }
+
+    .cp-btn {
+      font-size: 0.9rem;
+      padding: 8px 16px;
+    }
+
+    .cp-loading {
+      font-size: 0.9rem;
+    }
+
+    .cp-table-tag {
+      font-size: 0.85rem;
+    }
+
+    .cp-info-toggle {
+      font-size: 0.9rem;
+      padding: 8px 12px;
+    }
+
+    .cp-info-content {
+      font-size: 0.85rem;
+      padding: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cp-section h2 {
+      font-size: 1.3rem;
+    }
+
+    .cp-graph-card h3 {
+      font-size: 1.1rem;
+    }
+
+    .cp-form-group {
+      margin-bottom: 15px;
+    }
+
+    .cp-form-group label {
+      font-size: 0.85rem;
+    }
+
+    .cp-form-group select,
+    .cp-form-group input[type="number"],
+    .cp-form-group input[type="text"],
+    .cp-form-group textarea {
+      font-size: 0.8rem;
+      padding: 6px 10px;
+    }
+
+    .cp-btn {
+      font-size: 0.85rem;
+      padding: 6px 12px;
+    }
+
+    .cp-loading {
+      font-size: 0.85rem;
+    }
+
+    .cp-table-tag {
+      font-size: 0.8rem;
+      padding: 4px 8px;
+    }
+
+    .cp-info-toggle {
+      font-size: 0.85rem;
+      padding: 6px 10px;
+    }
+
+    .cp-info-content {
+      font-size: 0.8rem;
+      padding: 10px;
     }
 
     .cp-modal-close {
-      width: 35px;
-      height: 35px;
-      top: 5px;
-      right: 5px;
-    }
-
-    .cp-modal-close i {
+      width: 25px;
+      height: 25px;
       font-size: 1rem;
     }
   }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const themeInput = document.getElementById("themeInput");
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    themeInput.value = currentTheme;
+
+    const graphicImg = document.querySelector(".cp-graphic-img");
+    const modal = document.getElementById("graphicModal");
+    const modalContent = document.querySelector(".cp-modal-content");
+
+    // Показываем спиннер при отправке формы
+    const form = document.getElementById("graphForm");
+    const submitButton = document.getElementById("submitButton");
+    const loadingSpinner = document.getElementById("loadingSpinner");
+
+    form.addEventListener("submit", function() {
+      submitButton.style.display = "none";
+      loadingSpinner.style.display = "block";
+    });
+
+    if (graphicImg && modal) {
+      // Открытие модального окна при клике на график
+      graphicImg.addEventListener("click", function() {
+        modal.classList.add("open");
+        document.body.style.overflow = "hidden"; // Отключаем прокрутку
+      });
+
+      // Закрытие по клику вне области модального контента
+      modal.addEventListener("click", function(event) {
+        if (!modalContent.contains(event.target)) {
+          closeModal();
+        }
+      });
+
+      // Закрытие по нажатию Escape
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape" && modal.classList.contains("open")) {
+          closeModal();
+        }
+      });
+    }
+  });
+
+  function toggleInfo(button) {
+    const content = button.nextElementSibling;
+    const icon = button.querySelector("i");
+
+    if (content.classList.contains("open")) {
+      content.classList.remove("open");
+      button.querySelector("span").textContent = "О графике";
+      button.classList.remove("open");
+    } else {
+      content.classList.add("open");
+      button.querySelector("span").textContent = "Скрыть";
+      button.classList.add("open");
+    }
+  }
+
+  // Закрытие модального окна
+  function closeModal() {
+    const modal = document.getElementById("graphicModal");
+    modal.classList.remove("open");
+    document.body.style.overflow = "auto"; // Включаем прокрутку
+  }
+</script>
 {% endblock %}
