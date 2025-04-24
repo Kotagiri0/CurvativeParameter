@@ -108,7 +108,7 @@ class PostForm(forms.ModelForm):
         fields = ['title', 'content', 'image', 'calculation_result']
         widgets = {
             'title': forms.TextInput(attrs={'placeholder': 'Введите заголовок'}),
-            'content': forms.HiddenInput(),  # Скрываем полное поле content
+            'content': forms.TextInput(),  # Скрываем полное поле content
             'image': forms.FileInput(),
             'calculation_result': forms.Select(),
         }

@@ -206,28 +206,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: #28a745;
-    color: #ffffff;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    color: #6c757d;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-size: 1rem;
+    transition: color 0.3s ease, transform 0.2s ease;
+    font-size: 0.85rem;
   }
 
-  .cp-delete-btn {
-    background: #dc3545;
+  [data-theme="dark"] .cp-edit-btn,
+  [data-theme="dark"] .cp-delete-btn {
+    color: #999;
   }
 
-  .cp-edit-btn:hover {
-    background: #218838;
-    transform: translateY(-2px);
-  }
-
+  .cp-edit-btn:hover,
   .cp-delete-btn:hover {
-    background: #c82333;
+    color: var(--accent-color);
     transform: translateY(-2px);
   }
 
@@ -420,9 +417,9 @@
     }
 
     .cp-edit-btn, .cp-delete-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 0.9rem;
+      width: 20px;
+      height: 20px;
+      font-size: 0.8rem;
     }
   }
 
@@ -464,9 +461,9 @@
     }
 
     .cp-edit-btn, .cp-delete-btn {
-      width: 24px;
-      height: 24px;
-      font-size: 0.85rem;
+      width: 18px;
+      height: 18px;
+      font-size: 0.75rem;
     }
   }
 </style>
