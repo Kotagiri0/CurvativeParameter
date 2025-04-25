@@ -18,6 +18,9 @@ from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
 param_a, param_b = 0, 0
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .gmail import validate_gmail
 
 @login_required
 def graph_view(request):
@@ -161,10 +164,19 @@ def update_profile(request):
             return redirect('profile')
 
         # Проверка на уникальность email
-        if User.objects.exclude(pk=user.pk).filter(email=email).exists():
-            messages.error(request, 'Электронная почта уже используется.')
-            return redirect('profile')
+        if request.method == 'POST':
+            email = request.POST.get('email')
 
+            # Вызов функции валидации Gmail
+            validation_result = validate_gmail(request, user, email)
+            if validation_result:
+                return validation_result
+
+            # Если валидация прошла, обновляем email
+            user.email = email
+            user.save()
+            messages.success(request, 'Email успешно обновлен.')
+            return redirect('profile')
         try:
             # Обновляем данные пользователя
             user.username = username
