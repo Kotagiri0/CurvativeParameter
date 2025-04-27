@@ -2,7 +2,6 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Устанавливаем зависимости для mysqlclient и mysql-client
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
@@ -10,14 +9,13 @@ RUN apt-get update && apt-get install -y \
     mariadb-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем зависимости отдельно для кэширования слоев
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir --default-timeout=100 -r requirements.txt
 
 COPY . .
 
-# Делаем entrypoint.sh исполняемым
+RUN sed -i 's/\r$//' entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
