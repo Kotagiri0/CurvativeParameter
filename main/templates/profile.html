@@ -15,8 +15,23 @@
             <ul>
                 <li><i class="fas fa-envelope"></i> {{ user.email }}</li>
                 <li><i class="fas fa-calendar-alt"></i> Зарегистрирован: {{ user.date_joined|date:"d.m.Y" }}</li>
+                <!-- Добавляем статус Google аккаунта -->
+                <li>
+                    <i class="fab fa-google"></i>
+                    {% if has_social_account %}
+                        Google аккаунт привязан: {{ user.social_auth.first.extra_data.email|default:"Неизвестно" }}
+                    {% else %}
+                        Google аккаунт не привязан
+                    {% endif %}
+                </li>
             </ul>
             <button class="cp-edit-profile-btn" onclick="openEditModal()">Редактировать профиль</button>
+            <!-- Добавляем кнопку привязки Google -->
+            {% if not has_social_account %}
+                <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.path }}" class="cp-google-btn">
+                    <i class="fab fa-google"></i> Привязать Google
+                </a>
+            {% endif %}
             <form action="{% url 'logout' %}" method="POST" class="cp-logout-form" onsubmit="return confirm('Вы уверены, что хотите выйти из аккаунта?');">
                 {% csrf_token %}
                 <button type="submit" class="cp-logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
@@ -24,6 +39,7 @@
         </div>
     </div>
 
+    <!-- Мод - Остальная часть шаблона остаётся без изменений -->
     <!-- Модальное окно для редактирования профиля -->
     <div class="cp-modal" id="editProfileModal">
         <div class="cp-modal-content">
@@ -70,7 +86,6 @@
 
     <div class="cp-user-results">
         <h2><i class="fas fa-cogs"></i> Ваши расчеты</h2>
-
         {% if user_results %}
             <div class="cp-results-grid">
                 {% for result in user_results %}
@@ -99,7 +114,6 @@
                                 </form>
                             </div>
                         </div>
-
                         <div class="cp-result-details" id="details-{{ result.id }}" style="display: none;">
                             <h4>Таблица результатов</h4>
                             <div class="cp-table-responsive">
@@ -269,6 +283,36 @@
         box-shadow: 0 2px 8px var(--button-shadow);
     }
 
+    /* Стили для кнопки Google */
+    .cp-google-btn {
+        background-color: #ffffff;
+        color: #757575;
+        border: 2px solid #dadce0;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+
+    .cp-google-btn:hover {
+        background-color: #f8f9fa;
+        border-color: #dadce0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .cp-google-btn i {
+        color: #4285f4;
+        font-size: 1.2em;
+    }
+
     .cp-logout-btn {
         background-color: transparent;
         color: #dc3545;
@@ -299,7 +343,7 @@
         display: inline;
     }
 
-    /* Стили для модального окна */
+    /* Остальные стили остаются без изменений */
     .cp-modal {
         display: none;
         position: fixed;
@@ -424,7 +468,7 @@
         transition: opacity 0.3s ease;
         font-size: 0.9em;
         font-weight: 500;
-        gap: яpx;
+        gap: 5px;
     }
 
     .cp-avatar-label:hover .cp-avatar-overlay {
@@ -725,7 +769,7 @@
             gap: 8px;
         }
 
-        .cp-edit-profile-btn, .cp-logout-btn {
+        .cp-edit-profile-btn, .cp-logout-btn, .cp-google-btn {
             margin: 5px 0;
             width: 100%;
             max-width: 200px;

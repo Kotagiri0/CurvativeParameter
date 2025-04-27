@@ -1,20 +1,10 @@
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-
 from main.views import (
-    home_page,
-    register,
-    login_user,
-    logout_user,
-    databases,
-    graph_view,
-    calculations,
-    create_table,
-    delete_table,
-    profile,
-    update_profile,
-    delete_result,
+    home_page, register, login_user, logout_user, databases,
+    graph_view, calculations, create_table, delete_table,
+    profile, update_profile, delete_result
 )
 
 urlpatterns = [
@@ -30,4 +20,5 @@ urlpatterns = [
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),
     path('delete-table/<int:pk>/', delete_table, name='delete_table'),
+    path('profile/', include('social_django.urls', namespace='social')),  # Только здесь
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

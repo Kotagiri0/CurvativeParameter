@@ -124,30 +124,41 @@ def delete_result(request, result_id):
     return redirect('profile')
 
 
+from django.contrib.auth.decorators import login_required
+from main.models import Profile, CalculationResult
+from main.forms import UserUpdateForm, ProfileUpdateForm
+
 @login_required
 def profile(request):
     context = {}
     Profile.objects.get_or_create(user=request.user)
     user_results = CalculationResult.objects.filter(user=request.user).order_by('-created_at')
+
+    # Проверка, привязан ли соц аккаунт
+    has_social_account = request.user.social_auth.exists()
+    context['has_social_account'] = has_social_account
+
     if request.method == 'POST':
-        context['user_results'] = user_results
         user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
 
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            return redirect('profile')  # Имя URL для профиля
+            return redirect('profile')
     else:
         user_form = UserUpdateForm(instance=request.user)
         profile_form = ProfileUpdateForm(instance=request.user.profile)
 
-    return render(request, 'profile.html', {
+    context.update({
         'user': request.user,
         'user_form': user_form,
         'profile_form': profile_form,
-        'user_results': user_results
+        'user_results': user_results,
     })
+
+    return render(request, 'profile.html', context)
+
 
 @login_required
 def update_profile(request):
@@ -379,6 +390,13 @@ from django.contrib.auth.models import User
 from .forms import RegisterForm
 from .gmail import validate_gmail
 
+from django.contrib.auth import login
+from django.contrib.auth.backends import ModelBackend  # Добавляем
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from .forms import RegisterForm  # Предполагаю, что RegisterForm импортируется
+
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
@@ -399,7 +417,8 @@ def register(request):
             # Если валидация прошла, сохраняем пользователя
             user.email = email
             user.save()
-            login(request, user)
+            # Указываем бэкенд явно
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, 'Регистрация успешно завершена.')
             return redirect('home')
     else:

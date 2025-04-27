@@ -2,3 +2,5 @@ Django==5.1.6
 numpy==2.2.4
 matplotlib==3.10.1
 dnspython>=2.6.1
+social-auth-app-django
+python-decouple
