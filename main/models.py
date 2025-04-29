@@ -14,11 +14,10 @@ class Point(models.Model):
         return f"{self.x_value}, {self.y_value}"
 
 class Table(models.Model):
-    title = models.TextField()
-    solution = models.TextField()
-    points = models.ManyToManyField(Point, related_name="points")
+    title = models.TextField(default="Untitled")  # <-- Add default here
+    solution = models.TextField(default="")
+    points = models.ManyToManyField(Point, related_name="tables")
     temperature = models.FloatField()
-
 
 class CalculationResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
