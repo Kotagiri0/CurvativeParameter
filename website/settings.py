@@ -8,7 +8,7 @@ LOGIN_URL = 'login'
 SECRET_KEY = 'django-insecure-k$_orld5fk@!2c1toe)p86e*br*)y4-&%b2ntdh!)nmts*7a@c'
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']  # Добавлено
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -105,9 +105,16 @@ AUTHENTICATION_BACKENDS = (
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
-    'redirect_uri': 'http://localhost:8000/accounts/google/login/callback/',  # Или '/accounts/complete/google-oauth2/' для стандартного маршрута
+    'redirect_uri': 'http://localhost:8000/accounts/complete/google-oauth2/',
 }
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']  # Добавлено
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
+
+# Настройки для state
+SOCIAL_AUTH_STATE_PARAMETER = True
+SOCIAL_AUTH_USE_STATE = True
+
+# Настройки сессий
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'

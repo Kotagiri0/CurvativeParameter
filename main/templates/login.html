@@ -33,8 +33,11 @@
       <button type="submit" class="cp-btn cp-btn-primary">
         <i class="fas fa-sign-in-alt"></i> Войти
       </button>
-      <p class="cp-auth-link">Нет аккаунта? <a href="{% url 'register' %}" class="cp-link">Зарегистрироваться</a></p>
     </form>
+    <a href="{% url 'social:begin' 'google-oauth2' %}?next={% url 'profile' %}" class="cp-btn cp-btn-google">
+      <i class="fab fa-google"></i> Войти через Google
+    </a>
+    <p class="cp-auth-link">Нет аккаунта? <a href="{% url 'register' %}" class="cp-link">Зарегистрироваться</a></p>
   </div>
 </section>
 
@@ -172,6 +175,29 @@
     transform: scale(1.2);
   }
 
+  /* Стили для кнопки Google */
+  .cp-btn-google {
+    background: #4285f4;
+    color: white;
+    border: none;
+    width: 100%;
+    margin-top: 15px;
+  }
+
+  .cp-btn-google:hover {
+    background: #3267d6;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-btn-google i {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-btn-google:hover i {
+    transform: scale(1.2);
+  }
+
   /* Ссылка */
   .cp-auth-link {
     margin-top: 15px;
@@ -231,7 +257,7 @@
       padding: 8px 10px;
     }
 
-    .cp-btn-primary {
+    .cp-btn-primary, .cp-btn-google {
       padding: 10px 20px;
       font-size: 0.9rem;
     }

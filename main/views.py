@@ -107,6 +107,14 @@ def graph_view(request):
 
     print(f"Контекст: {context}")
     return render(request, 'graphs.html', context)
+@login_required
+def callback(request):
+
+        context = {
+            'username': request.user.username,
+            'password': request.user.password
+        }
+        return render(context)
 
 @login_required
 def databases(request):
@@ -128,15 +136,22 @@ from django.contrib.auth.decorators import login_required
 from main.models import Profile, CalculationResult
 from main.forms import UserUpdateForm, ProfileUpdateForm
 
+from django.contrib.auth.decorators import login_required
+from social_django.models import UserSocialAuth
+
 @login_required
 def profile(request):
     context = {}
+    # Создаем или получаем профиль пользователя
     Profile.objects.get_or_create(user=request.user)
+    # Получаем результаты расчетов
     user_results = CalculationResult.objects.filter(user=request.user).order_by('-created_at')
 
-    # Проверка, привязан ли соц аккаунт
-    has_social_account = request.user.social_auth.exists()
-    context['has_social_account'] = has_social_account
+    # Проверка, привязан ли Google-аккаунт
+    google_account = UserSocialAuth.objects.filter(user=request.user, provider='google-oauth2').first()
+    has_google_account = google_account is not None
+    context['has_google_account'] = has_google_account
+    context['google_account'] = google_account  # Передаем объект Google-аккаунта для доступа к extra_data
 
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=request.user)
@@ -158,7 +173,6 @@ def profile(request):
     })
 
     return render(request, 'profile.html', context)
-
 
 @login_required
 def update_profile(request):

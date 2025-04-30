@@ -114,33 +114,35 @@
                                 </form>
                             </div>
                         </div>
-                        <div class="cp-result-details" id="details-{{ result.id }}" style="display: none;">
-                            <h4>Таблица результатов</h4>
-                            <div class="cp-table-responsive">
-                                <table class="cp-result-table">
-                                    <thead>
-                                        <tr>
-                                            <th>x<sub>2</sub> (моль)</th>
-                                            <th>G<sup>E</sup><sub>mod</sub> (Дж·моль<sup>-1</sup>)</th>
-                                            <th>G<sup>E</sup><sub>exp</sub> (Дж·моль<sup>-1</sup>)</th>
-                                            <th>σ (%)</th>
-                                            <th>Δ (Дж·моль<sup>-1</sup>)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for row in result.table_data %}
-                                        <tr>
-                                            <td>{{ row.x2|floatformat:3 }}</td>
-                                            <td>{{ row.gmod|floatformat:0 }}</td>
-                                            <td>{{ row.gexp|floatformat:0 }}</td>
-                                            <td>{{ row.sigma|floatformat:1 }}</td>
-                                            <td>{{ row.delta|floatformat:0 }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                       <div class="cp-user-details">
+    <h2>{{ user.username }}</h2>
+    <ul>
+        <li><i class="fas fa-envelope"></i> {{ user.email }}</li>
+        <li><i class="fas fa-calendar-alt"></i> Зарегистрирован: {{ user.date_joined|date:"d.m.Y" }}</li>
+        <!-- Статус Google аккаунта -->
+        <li>
+            <i class="fab fa-google"></i>
+            {% if has_google_account %}
+                Google аккаунт привязан: {{ google_account.extra_data.email|default:"Неизвестно" }}
+                <!-- Если хотите отображать имя и email -->
+                <!-- Google аккаунт привязан: {{ google_account.extra_data.name|default:"Неизвестно" }} ({{ google_account.extra_data.email|default:"Неизвестно" }}) -->
+            {% else %}
+                Google аккаунт не привязан
+            {% endif %}
+        </li>
+    </ul>
+    <button class="cp-edit-profile-btn" onclick="openEditModal()">Редактировать профиль</button>
+    <!-- Кнопка привязки Google -->
+    {% if not has_google_account %}
+        <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.path }}" class="cp-google-btn">
+            <i class="fab fa-google"></i> Привязать Google
+        </a>
+    {% endif %}
+    <form action="{% url 'logout' %}" method="POST" class="cp-logout-form" onsubmit="return confirm('Вы уверены, что хотите выйти из аккаунта?');">
+        {% csrf_token %}
+        <button type="submit" class="cp-logout-btn"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+    </form>
+</div>
                     </div>
                 {% endfor %}
             </div>
