@@ -20,5 +20,5 @@ urlpatterns = [
     path('calculations/', calculations, name='calculations'),
     path('create-table/', create_table, name='create_table'),
     path('delete-table/<int:pk>/', delete_table, name='delete_table'),
-    path('profile/', include('social_django.urls', namespace='social')),  # Только здесь
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('accounts/', include('social_django.urls', namespace='social')),
+]
