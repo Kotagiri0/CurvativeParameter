@@ -16,7 +16,8 @@ python manage.py collectstatic --no-input --clear
 python manage.py createsuperuser \
   --noinput \
   --username admin \
-  --email admin@example.com || true
+  --email admin@example.com \
+  --password admin || true
 
 # Запуск сервера
-exec gunicorn --bind 0.0.0.0:8000 website.wsgi:application
+exec gunicorn --workers 2 --timeout 120 --log-level debug --bind 0.0.0.0:8000 website.wsgi:application
