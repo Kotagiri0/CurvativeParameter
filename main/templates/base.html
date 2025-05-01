@@ -68,6 +68,7 @@
             pointer-events: none;
             animation: formulaFloat 20s linear infinite;
             z-index: -1;
+            transition: background-image 0.3s ease;
         }
 
         [data-theme="dark"] body::before {
@@ -175,7 +176,6 @@
             background: linear-gradient(to right, var(--link-hover), transparent);
         }
 
-        /* Стили для ссылки на профиль */
         .desktop-nav .profile-link {
             position: relative;
             padding: 8px 12px;
@@ -292,7 +292,6 @@
             z-index: 0;
         }
 
-        /* Стили для контейнера уведомлений */
         .cp-notification-container {
             position: fixed;
             top: 20px;
@@ -303,7 +302,6 @@
             gap: 10px;
         }
 
-        /* Стили для уведомления */
         .cp-notification {
             background-color: var(--background-color);
             color: var(--text-color);
@@ -476,6 +474,7 @@
                 <a href="{% url 'databases' %}"><i class="fa-solid fa-database icon"></i> Базы данных</a>
                 <a href="{% url 'graphs' %}"><i class="fas fa-chart-line icon"></i> Графики</a>
                 <a href="{% url 'calculations' %}"><i class="fas fa-calculator icon"></i> Расчеты</a>
+                <a href="{% url 'forum_list' %}"><i class="fas fa-comments icon"></i> Форум</a>
                 <a href="{% url 'profile' %}" class="profile-link">
                     {% if user.profile.avatar %}
                         <img src="{{ user.profile.avatar.url }}" class="avatar" alt="Avatar">
@@ -502,13 +501,10 @@
     <script>
         function toggleTheme() {
             const html = document.documentElement;
-            const toggleBtns = [document.getElementById("themeBtnNav")];
+            const toggleBtn = document.getElementById("themeBtnNav");
 
             html.classList.remove("no-transition");
-
-            toggleBtns.forEach(btn => {
-                if (btn) btn.classList.add("animate");
-            });
+            toggleBtn.classList.add("animate");
 
             const isDark = html.getAttribute("data-theme") === "dark";
             if (isDark) {
@@ -520,9 +516,7 @@
             }
 
             setTimeout(() => {
-                toggleBtns.forEach(btn => {
-                    if (btn) btn.classList.remove("animate");
-                });
+                toggleBtn.classList.remove("animate");
             }, 700);
         }
 
@@ -538,7 +532,6 @@
                 }
             });
 
-            // Извлечение сообщений из Django messages
             const messages = [
                 {% for message in messages %}
                     {
@@ -548,46 +541,38 @@
                 {% endfor %}
             ];
 
-            // Функция для показа уведомления
             function showNotification(message, type) {
                 const notificationContainer = document.getElementById('notificationContainer');
                 const notification = document.createElement('div');
                 notification.className = `cp-notification ${type}`;
 
-                // Создаем содержимое уведомления
                 notification.innerHTML = `
                     <span class="cp-notification-message">${message}</span>
                     <button class="cp-notification-close">×</button>
                 `;
 
-                // Добавляем уведомление в контейнер
                 notificationContainer.appendChild(notification);
 
-                // Показываем уведомление с анимацией
                 setTimeout(() => {
                     notification.classList.add('show');
                 }, 100);
 
-                // Автоматическое скрытие через 5 секунд
                 setTimeout(() => {
                     closeNotification(notification);
                 }, 5000);
 
-                // Обработчик для кнопки закрытия
                 notification.querySelector('.cp-notification-close').addEventListener('click', () => {
                     closeNotification(notification);
                 });
             }
 
-            // Функция для скрытия уведомления
             function closeNotification(notification) {
                 notification.classList.remove('show');
                 setTimeout(() => {
                     notification.remove();
-                }, 300); // Даем время на завершение анимации
+                }, 300);
             }
 
-            // Показываем все сообщения
             messages.forEach(message => {
                 showNotification(message.text, message.tags);
             });

@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактировать пост{% endblock %}
+
+{% block content %}
+<section class="cp-section">
+  <div class="cp-header">
+    <h2><i class="fas fa-pencil-alt"></i> Редактировать пост</h2>
+  </div>
+
+  <div class="cp-graph-card">
+    <form method="POST" class="cp-form" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="cp-form-content">
+        {% if form.errors %}
+          <div class="cp-form-errors">
+            {% for field in form %}
+              {% for error in field.errors %}
+                <p class="cp-error">{{ field.label }}: {{ error }}</p>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <p class="cp-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="cp-form-group">
+          <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
+          {{ form.title }}
+        </div>
+        <div class="cp-form-group">
+          <label for="{{ form.calculation_result.id_for_label }}">{{ form.calculation_result.label }}:</label>
+          {{ form.calculation_result }}
+        </div>
+        <div class="cp-form-group">
+          <p style="color: var(--error-color); font-size: 0.9rem; margin-bottom: 10px;">
+            Внимание: здесь редактируется только пользовательский комментарий. Технические данные обновляются при выборе результата расчёта.
+          </p>
+          <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}:</label>
+          {{ form.comment }}
+          {{ form.content }} <!-- Скрытое поле для полного content -->
+        </div>
+        <div class="cp-form-group cp-file-upload">
+          <label for="{{ form.image.id_for_label }}">{{ form.image.label }}:</label>
+          <div class="cp-file-input-wrapper">
+            <span class="cp-file-placeholder">Выберите изображение...</span>
+            <input type="file" id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" accept="image/*" />
+          </div>
+          <div class="cp-image-preview">
+            <img id="image-preview-{{ form.image.id_for_label }}" alt="Предпросмотр изображения" {% if post.image %}src="{{ post.image.url }}"{% else %}style="display: none;"{% endif %} />
+          </div>
+        </div>
+      </div>
+      <div class="cp-btn-group" style="display: flex; gap: 10px; justify-content: center;">
+        <a href="{% url 'forum_detail' post_id=post.id %}" class="cp-btn cp-btn-secondary">
+          <i class="fas fa-times"></i> Отмена
+        </a>
+        <button type="submit" class="cp-btn cp-btn-primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  :root {
+    --primary-color: #007bff;
+    --accent-color: #007bff;
+    --text-color-light: #333;
+    --text-color-dark: #e0e0e0;
+    --background-light: #ffffff;
+    --background-dark: #1e1e1e;
+    --card-bg-light: #f8f9fa;
+    --card-bg-dark: #2c2c2c;
+    --border-light: rgba(0, 0, 0, 0.1);
+    --border-dark: rgba(255, 255, 255, 0.1);
+    --shadow-light: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-dark: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --error-color: #dc3545;
+  }
+
+  .cp-section {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .cp-header {
+    margin-bottom: 30px;
+  }
+
+  .cp-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color-light);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--accent-color);
+  }
+
+  [data-theme="dark"] .cp-header h2 {
+    color: var(--text-color-dark);
+  }
+
+  .cp-header h2 i {
+    color: var(--accent-color);
+  }
+
+  .cp-graph-card {
+    background: var(--card-bg-light);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-light);
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  [data-theme="dark"] .cp-graph-card {
+    background: var(--card-bg-dark);
+    border: 1px solid var(--border-dark);
+    box-shadow: var(--shadow-dark);
+  }
+
+  .cp-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cp-form-content {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 20px;
+  }
+
+  .cp-form-errors {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid var(--error-color);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 20px;
+    color: var(--error-color);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .cp-error {
+    margin: 5px 0;
+  }
+
+  .cp-form-group {
+    margin-bottom: 20px;
+  }
+
+  .cp-form-group label {
+    display: block;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color-light);
+    margin-bottom: 8px;
+  }
+
+  [data-theme="dark"] .cp-form-group label {
+    color: var(--text-color-dark);
+  }
+
+  .cp-form-group input[type="text"],
+  .cp-form-group textarea,
+  .cp-form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--card-bg-light);
+    color: var(--text-color-light);
+    transition: border-color 0.3s ease, background 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .cp-form-group input[type="text"],
+  [data-theme="dark"] .cp-form-group textarea,
+  [data-theme="dark"] .cp-form-group select {
+    border: 1px solid var(--border-dark);
+    background: var(--card-bg-dark);
+    color: var(--text-color-dark);
+  }
+
+  .cp-form-group input[type="text"]:focus,
+  .cp-form-group textarea:focus,
+  .cp-form-group select:focus {
+    border-color: var(--primary-color);
+    background: var(--background-light);
+    outline: none;
+  }
+
+  [data-theme="dark"] .cp-form-group input[type="text"]:focus,
+  [data-theme="dark"] .cp-form-group textarea:focus,
+  [data-theme="dark"] .cp-form-group select:focus {
+    background: rgba(50, 50, 50, 0.7);
+  }
+
+  .cp-form-group textarea {
+    min-height: 150px;
+    resize: vertical;
+  }
+
+  .cp-file-upload {
+    position: relative;
+  }
+
+  .cp-file-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--card-bg-light);
+    padding: 10px 12px;
+    transition: border-color 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-file-input-wrapper {
+    border: 1px solid var(--border-dark);
+    background: var(--card-bg-dark);
+  }
+
+  .cp-file-input-wrapper:hover,
+  .cp-file-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+  }
+
+  .cp-file-placeholder {
+    font-size: 0.95rem;
+    color: rgba(0, 0, 0, 0.5);
+    flex: 1;
+  }
+
+  [data-theme="dark"] .cp-file-placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .cp-file-input-wrapper input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .cp-file-input-wrapper input[type="file"]::-webkit-file-upload-button {
+    display: none;
+  }
+
+  .cp-image-preview {
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .cp-image-preview img {
+    max-width: 200px;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    transition: transform 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-image-preview img {
+    border: 1px solid var(--border-dark);
+  }
+
+  .cp-image-preview img:hover {
+    transform: scale(1.05);
+  }
+
+  .cp-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  }
+
+  .cp-btn-primary {
+    background: var(--primary-color);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  [data-theme="dark"] .cp-btn-primary {
+    background: #66b0ff;
+  }
+
+  .cp-btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  [data-theme="dark"] .cp-btn-primary:hover {
+    background: #4a8fe6;
+  }
+
+  .cp-btn-secondary {
+    background: #6c757d;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-btn-secondary {
+    background: #999;
+  }
+
+  .cp-btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  [data-theme="dark"] .cp-btn-secondary:hover {
+    background: #7a7a7a;
+  }
+
+  /* Анимации */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Адаптивность */
+  @media (max-width: 768px) {
+    .cp-section {
+      padding: 0 15px;
+    }
+
+    .cp-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .cp-form-group label {
+      font-size: 0.9rem;
+    }
+
+    .cp-form-group input[type="text"],
+    .cp-form-group textarea,
+    .cp-form-group select {
+      font-size: 0.9rem;
+      padding: 8px 10px;
+    }
+
+    .cp-file-placeholder {
+      font-size: 0.9rem;
+    }
+
+    .cp-btn {
+      font-size: 0.9rem;
+      padding: 8px 16px;
+    }
+
+    .cp-form-errors {
+      font-size: 0.85rem;
+    }
+
+    .cp-image-preview img {
+      max-width: 150px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cp-header h2 {
+      font-size: 1.3rem;
+    }
+
+    .cp-form-group label {
+      font-size: 0.85rem;
+    }
+
+    .cp-form-group input[type="text"],
+    .cp-form-group textarea,
+    .cp-form-group select {
+      font-size: 0.85rem;
+      padding: 6px 8px;
+    }
+
+    .cp-file-placeholder {
+      font-size: 0.85rem;
+    }
+
+    .cp-btn {
+      font-size: 0.85rem;
+      padding: 6px 12px;
+    }
+
+    .cp-form-errors {
+      font-size: 0.8rem;
+    }
+
+    .cp-image-preview img {
+      max-width: 120px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('.cp-file-input-wrapper input[type="file"]');
+    const placeholder = document.querySelector('.cp-file-input-wrapper .cp-file-placeholder');
+    const preview = document.querySelector('.cp-image-preview img');
+
+    // Устанавливаем начальное значение плейсхолдера, если есть текущее изображение
+    {% if post.image %}
+      placeholder.textContent = 'Текущее изображение загружено';
+    {% endif %}
+
+    fileInput.addEventListener('change', function() {
+      placeholder.textContent = this.files.length > 0 ? this.files[0].name : 'Выберите изображение...';
+
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(this.files[0]);
+      } else {
+        // Если файл не выбран, возвращаем текущее изображение или скрываем предпросмотр
+        {% if post.image %}
+          preview.src = '{{ post.image.url }}';
+          preview.style.display = 'block';
+        {% else %}
+          preview.src = '';
+          preview.style.display = 'none';
+        {% endif %}
+      }
+    });
+  });
+</script>
+{% endblock %}

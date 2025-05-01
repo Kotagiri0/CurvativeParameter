@@ -1,8 +1,11 @@
+import json
+
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 
+# Create your models here.
 class Point(models.Model):
     x_value = models.FloatField()
     y_value = models.FloatField()
@@ -10,93 +13,39 @@ class Point(models.Model):
     def __str__(self):
         return f"{self.x_value}, {self.y_value}"
 
-
 class Table(models.Model):
-    title = models.TextField(default="Untitled")
+    title = models.TextField(default="Untitled")  # <-- Add default here
     solution = models.TextField(default="")
     points = models.ManyToManyField(Point, related_name="tables")
-    temperature = models.FloatField(default=0.0)  # Добавлен default
-
+    temperature = models.FloatField()
 
 class CalculationResult(models.Model):
-    ALGORITHM_CHOICES = [
-        ('unknown', 'Неизвестный алгоритм'),
-        ('annealing', 'Имитация отжига'),
-        ('genetic', 'Генетический алгоритм'),
-        ('gradient', 'Градиентный спуск'),
-    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
+    title = models.CharField(max_length=200, default="Без названия", verbose_name="Название расчета")
+    param_a = models.FloatField()
+    param_b = models.FloatField()
+    table = models.ForeignKey('Table', on_delete=models.CASCADE, null=True, blank=True)  # Временно null=True
+    created_at = models.DateTimeField(auto_now_add=True)
+    iterations = models.IntegerField(null=True, blank=True, verbose_name="Количество итераций")
+    exec_time = models.FloatField(null=True, blank=True, verbose_name="Время выполнения (сек)")
+    algorithm = models.CharField(max_length=100, null=True, blank=True, verbose_name="Алгоритм")
+    average_op = models.FloatField(null=True, blank=True, verbose_name="Средняя относительная погрешность (%)")
+    table_data = models.TextField(null=True, blank=True, verbose_name="Данные таблицы")
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='calculation_results',
-        verbose_name='Пользователь'
-    )
-
-    title = models.CharField(
-        max_length=200,
-        default='Новый расчет',
-        verbose_name='Название расчета'
-    )
-
-    algorithm = models.CharField(
-        max_length=100,
-        choices=ALGORITHM_CHOICES,
-        default='unknown',
-        verbose_name='Алгоритм'
-    )
-
-    param_a = models.FloatField(
-        verbose_name='Параметр А',
-        default=0.0  # Добавлено
-    )
-
-    param_b = models.FloatField(
-        verbose_name='Параметр Б',
-        default=0.0  # Добавлено
-    )
-
-    iterations = models.PositiveIntegerField(
-        verbose_name='Итерации',
-        default=1  # Добавлено
-    )
-
-    average_op = models.FloatField(
-        default=0.0,
-        verbose_name='Среднее значение'
-    )
-
-    exec_time = models.FloatField(
-        default=0.0,
-        verbose_name='Время выполнения (сек)'
-    )
-
-    table_data = models.JSONField(
-        default=dict,
-        verbose_name='Таблица данных'
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
-
-    class Meta:
-        verbose_name = 'Результат расчета'
-        verbose_name_plural = 'Результаты расчетов'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['algorithm']),
-            models.Index(fields=['created_at']),
-        ]
+    def get_table_data(self):
+        if self.table_data:
+            try:
+                return json.loads(self.table_data)
+            except json.JSONDecodeError:
+                return self.table_data
+        return None
 
     def __str__(self):
-        return f"Результаты {self.get_algorithm_display()} для {self.user.username}"
+        return f"Calculation #{self.id} by {self.user.username}"
 
-    def save(self, *args, **kwargs):
-        if not self.title.strip():
-            self.title = f"Расчет {self.algorithm} от {self.created_at.strftime('%Y-%m-%d')}"
-        super().save(*args, **kwargs)
+    class Meta:
+        verbose_name = "Результат расчета"
+        verbose_name_plural = "Результаты расчетов"
 
 
 class Profile(models.Model):
@@ -105,3 +54,19 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.username}"
+
+
+class Post(models.Model):
+    title = models.CharField(max_length=200, verbose_name="Заголовок")
+    content = models.TextField(verbose_name="Содержание")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts", verbose_name="Автор")
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
+    image = models.ImageField(upload_to="post_images/", null=True, blank=True, verbose_name="Изображение")
+    calculation_result = models.ForeignKey('CalculationResult', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Пост"
+        verbose_name_plural = "Посты"
+
+    def __str__(self):
+        return self.title

@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+{% load string_filters %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+<section class="cp-section">
+  <div class="cp-header">
+    <div class="cp-header-left">
+      <a href="{% url 'forum_list' %}" class="cp-back-button">
+        <svg class="cp-back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+        <span>Назад</span>
+      </a>
+    </div>
+    <h2>{{ post.title }}</h2>
+    <div class="cp-meta">
+      <p><strong>Автор:</strong> {{ post.author.username }}</p>
+      <p><strong>Дата:</strong> {{ post.created_at|date:"d.m.Y H:i" }}</p>
+    </div>
+  </div>
+
+  <div class="cp-post-content">
+    {% if post.calculation_result or post.calculation_result.get_table_data %}
+      <!-- Для постов с расчётами: двухколоночная раскладка -->
+      <div class="cp-content-row">
+        <!-- Секция Результат расчета -->
+        {% if post.calculation_result %}
+          <div class="cp-result-card">
+            <h3>Результат расчета</h3>
+            <ul class="cp-result-list">
+              <li>
+                <span class="cp-label">Параметр A<sub>12</sub></span>
+                <span class="cp-value">{{ post.calculation_result.param_a|floatformat:3 }}</span>
+              </li>
+              <li>
+                <span class="cp-label">Параметр A<sub>21</sub></span>
+                <span class="cp-value">{{ post.calculation_result.param_b|floatformat:3 }}</span>
+              </li>
+              <li>
+                <span class="cp-label">Итераций</span>
+                <span class="cp-value">{{ post.calculation_result.iterations|default:"N/A" }}</span>
+              </li>
+              <li>
+                <span class="cp-label">Время выполнения</span>
+                <span class="cp-value">{% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</span>
+              </li>
+              <li>
+                <span class="cp-label">Алгоритм</span>
+                <span class="cp-value">{{ post.calculation_result.algorithm|default:"Не указан" }}</span>
+              </li>
+              <li>
+                <span class="cp-label">Средняя погрешность</span>
+                <span class="cp-value">{% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</span>
+              </li>
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Секция Описание -->
+        {% if post.content|extract_comment or post.image %}
+          <div class="cp-description-card">
+            <h3>Описание</h3>
+            {% if post.content|extract_comment %}
+              <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+            {% else %}
+              <p class="cp-comment-placeholder">Нет описания</p>
+            {% endif %}
+            {% if post.image %}
+              <div class="cp-post-image-container">
+                <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Секция Данные таблицы -->
+      {% if post.calculation_result.get_table_data %}
+        <div class="cp-table-container">
+          <div class="cp-table-header">
+            <h3>Данные таблицы</h3>
+            <button id="toggle-table" class="cp-toggle-button">
+              <span id="toggle-text">Скрыть таблицу</span>
+              <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+          </div>
+          <div id="table-content" class="cp-table-content">
+            <table class="cp-table">
+              <thead>
+                <tr>
+                  <th>x<sub>2</sub></th>
+                  <th>G<sup>E</sup><sub>exp</sub></th>
+                  <th>G<sup>E</sup><sub>mod</sub></th>
+                  <th>σ (%)</th>
+                  <th>Δ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in post.calculation_result.get_table_data %}
+                  <tr class="{% cycle 'row-even' 'row-odd' %}">
+                    <td>{{ row.x2|default:"N/A" }}</td>
+                    <td>{{ row.gexp|default:"N/A" }}</td>
+                    <td>{{ row.gmod|default:"N/A" }}</td>
+                    <td>{{ row.sigma|default:"N/A" }}</td>
+                    <td>{{ row.delta|default:"N/A" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      <!-- Для обычных постов: только описание, если есть -->
+      {% if post.content|extract_comment or post.image %}
+        <div class="cp-description-card">
+          <h3>Описание</h3>
+          {% if post.content|extract_comment %}
+            <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+          {% else %}
+            <p class="cp-comment-placeholder">Нет описания</p>
+          {% endif %}
+          {% if post.image %}
+            <div class="cp-post-image-container">
+              <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+<style>
+  :root {
+    --primary-color: #3b82f6;
+    --accent-color: #10b981;
+    --text-color-light: #1f2937;
+    --text-color-dark: #e5e7eb;
+    --background-light: transparent;
+    --background-dark: transparent;
+    --card-bg-light: #ffffff;
+    --card-bg-dark: #1f2937;
+    --border-light: #e5e7eb;
+    --border-dark: #374151;
+    --shadow-light: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    --row-even-light: #f8fafc;
+    --row-odd-light: #ffffff;
+    --row-even-dark: #1f2937;
+    --row-odd-dark: #2d3748;
+  }
+
+  .cp-section {
+    max-width: 1000px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--background-light);
+    transition: background 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-section {
+    background: var(--background-dark);
+  }
+
+  .cp-header {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .cp-header-left {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 1rem;
+  }
+
+  .cp-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-color);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  [data-theme="dark"] .cp-back-button {
+    background: #60a5fa;
+  }
+
+  .cp-back-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-back-icon {
+    stroke: #ffffff;
+  }
+
+  .cp-header h2 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-color-light);
+    margin-bottom: 1rem;
+  }
+
+  [data-theme="dark"] .cp-header h2 {
+    color: var(--text-color-dark);
+  }
+
+  .cp-meta {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    opacity: 0.9;
+  }
+
+  [data-theme="dark"] .cp-meta {
+    color: var(--text-color-dark);
+  }
+
+  .cp-meta p {
+    margin: 0;
+    font-weight: 500;
+  }
+
+  .cp-meta strong {
+    font-weight: 700;
+    margin-right: 0.25rem;
+  }
+
+  .cp-post-content {
+    color: var(--text-color-light);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  [data-theme="dark"] .cp-post-content {
+    color: var(--text-color-dark);
+  }
+
+  .cp-content-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .cp-result-card,
+  .cp-description-card {
+    flex: 1;
+    background: var(--card-bg-light);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-result-card,
+  [data-theme="dark"] .cp-description-card {
+    background: var(--card-bg-dark);
+    border: 1px solid var(--border-dark);
+    box-shadow: var(--shadow-dark);
+  }
+
+  .cp-result-card:hover,
+  .cp-description-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+
+  .cp-result-card h3,
+  .cp-description-card h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text-color-light);
+  }
+
+  [data-theme="dark"] .cp-result-card h3,
+  [data-theme="dark"] .cp-description-card h3 {
+    color: var(--text-color-dark);
+  }
+
+  .cp-result-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .cp-result-list li {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    margin-bottom: 0.5rem;
+    padding-left: 1rem;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .cp-result-list li:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateX(5px);
+  }
+
+  [data-theme="dark"] .cp-result-list li:hover {
+    background: rgba(96, 165, 250, 0.2);
+  }
+
+  .cp-label {
+    font-weight: 600;
+    color: var(--text-color-light);
+    margin-right: 1rem;
+    min-width: 140px;
+  }
+
+  [data-theme="dark"] .cp-label {
+    color: var(--text-color-dark);
+  }
+
+  .cp-value {
+    color: var(--primary-color);
+    font-weight: 500;
+  }
+
+  [data-theme="dark"] .cp-value {
+    color: #60a5fa;
+  }
+
+  .cp-comment,
+  .cp-comment-placeholder {
+    color: var(--text-color-light);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0 0 1rem 0;
+  }
+
+  [data-theme="dark"] .cp-comment,
+  [data-theme="dark"] .cp-comment-placeholder {
+    color: var(--text-color-dark);
+  }
+
+  .cp-comment-placeholder {
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  .cp-table-container {
+    margin-bottom: 2rem;
+  }
+
+  .cp-table-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .cp-table-header h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-color-light);
+    margin-bottom: 0.5rem;
+  }
+
+  [data-theme="dark"] .cp-table-header h3 {
+    color: var(--text-color-dark);
+  }
+
+  .cp-toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  [data-theme="dark"] .cp-toggle-button {
+    background: #60a5fa;
+  }
+
+  .cp-toggle-button:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+  }
+
+  .cp-table-content {
+    transform: translateY(0);
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+    transition: transform 0.5s ease, opacity 0.5s ease, height 0.5s ease;
+  }
+
+  .cp-table-content.hidden {
+    transform: translateY(-20px);
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .cp-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card-bg-light);
+    border: 1px solid var(--border-light);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+  }
+
+  [data-theme="dark"] .cp-table {
+    background: var(--card-bg-dark);
+    border: 1px solid var(--border-dark);
+    box-shadow: var(--shadow-dark);
+  }
+
+  .cp-table th,
+  .cp-table td {
+    padding: 0.75rem 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  [data-theme="dark"] .cp-table th,
+  [data-theme="dark"] .cp-table td {
+    color: var(--text-color-dark);
+    border-bottom: 1px solid var(--border-dark);
+  }
+
+  .cp-table th {
+    background: var(--primary-color);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  [data-theme="dark"] .cp-table th {
+    background: #60a5fa;
+  }
+
+  .cp-table tbody tr.row-even {
+    background: var(--row-even-light);
+  }
+
+  .cp-table tbody tr.row-odd {
+    background: var(--row-odd-light);
+  }
+
+  [data-theme="dark"] .cp-table tbody tr.row-even {
+    background: var(--row-even-dark);
+  }
+
+  [data-theme="dark"] .cp-table tbody tr.row-odd {
+    background: var(--row-odd-dark);
+  }
+
+  .cp-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  [data-theme="dark"] .cp-table tbody tr:hover {
+    background: rgba(96, 165, 250, 0.2);
+  }
+
+  .cp-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .cp-warning {
+    color: #ef4444;
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 0.5rem;
+  }
+
+  [data-theme="dark"] .cp-warning {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.2);
+  }
+
+  .cp-post-image-container {
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .cp-post-img {
+    max-width: 100%;
+    width: 300px;
+    height: auto;
+    border-radius: 1rem;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-light);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-post-img {
+    border: 1px solid var(--border-dark);
+    box-shadow: var(--shadow-dark);
+  }
+
+  .cp-post-img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    .cp-content-row {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .cp-result-card,
+    .cp-description-card {
+      width: 100%;
+    }
+
+    .cp-header h2 {
+      font-size: 1.75rem;
+    }
+
+    .cp-meta {
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .cp-result-card h3,
+    .cp-description-card h3,
+    .cp-table-header h3 {
+      font-size: 1.5rem;
+    }
+
+    .cp-label {
+      min-width: 120px;
+    }
+
+    .cp-table th,
+    .cp-table td {
+      font-size: 0.85rem;
+      padding: 0.5rem;
+    }
+
+    .cp-back-button,
+    .cp-toggle-button {
+      font-size: 0.85rem;
+      padding: 0.4rem 0.8rem;
+    }
+
+    .cp-post-img {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cp-section {
+      padding: 0 1rem;
+      margin: 2rem auto;
+    }
+
+    .cp-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .cp-table th,
+    .cp-table td {
+      font-size: 0.8rem;
+      padding: 0.4rem;
+    }
+
+    .cp-label {
+      min-width: 100px;
+    }
+
+    .cp-back-button,
+    .cp-toggle-button {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleButton = document.getElementById('toggle-table');
+    const tableContent = document.getElementById('table-content');
+    const toggleText = document.getElementById('toggle-text');
+    const toggleIcon = document.getElementById('toggle-icon');
+
+    if (toggleButton && tableContent) {
+      toggleButton.addEventListener('click', () => {
+        const isHidden = tableContent.classList.contains('hidden');
+        tableContent.classList.toggle('hidden');
+        toggleText.textContent = isHidden ? 'Скрыть таблицу' : 'Показать таблицу';
+        toggleIcon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
+    }
+  });
+</script>
+{% endblock %}

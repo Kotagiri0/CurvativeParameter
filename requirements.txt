@@ -4,3 +4,5 @@ matplotlib==3.10.1
 dnspython>=2.6.1
 social-auth-app-django
 python-decouple
+mysqlclient==2.2.4
+gunicorn==23.0.0
