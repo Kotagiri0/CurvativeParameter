@@ -252,11 +252,13 @@ def share_calculation(request, result_id):
 
 @login_required
 def graph_view(request):
+    # Get parameters from session
     result_id = request.session.get('result_id')
     table_id = request.session.get('table_id')
     param_a = request.session.get('param_a')
     param_b = request.session.get('param_b')
 
+    # Set initial form data
     initial_data = {}
     if result_id:
         try:
@@ -285,16 +287,19 @@ def graph_view(request):
     context = {'form': form}
 
     if request.method == 'POST' and form.is_valid():
+        # Get form data
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
+        # Save parameters and table choice to session
         request.session['table_id'] = table_id
         request.session['param_a'] = parameter_a
         request.session['param_b'] = parameter_b
         request.session.modified = True
 
+        # Create plot data
         new_y = []
         new_x = np.linspace(0, 1, 10000)
         xx = []
@@ -309,6 +314,7 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
+        # Build the graph
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(new_x, new_y, color='red', marker='o', markersize=1)
         ax.scatter(xx, yy, color='b')
@@ -317,12 +323,14 @@ def graph_view(request):
         ax.set_ylabel(r'$G^{E}$')
         ax.grid(True)
 
+        # Save graph to memory for display
         buffer = BytesIO()
         plt.savefig(buffer, format='png', bbox_inches='tight')
         buffer.seek(0)
         image_png = buffer.getvalue()
         graphic = base64.b64encode(image_png).decode('utf-8')
 
+        # Формируем table_data (для отображения, но не для сохранения)
         table_data = []
         for x, y_exp in zip(xx, yy):
             x1 = 1 - x
@@ -338,16 +346,7 @@ def graph_view(request):
                 "delta": delta
             })
 
-        # Создаем новый объект CalculationResult
-        result = CalculationResult.objects.create(
-            user=request.user,
-            title=table.title,
-            algorithm='Manual Input',  # Укажите подходящий алгоритм
-            param_a=parameter_a,
-            param_b=parameter_b,
-            table=table,
-            table_data=json.dumps(table_data)
-        )
+        # Update session with the new result_id
         request.session['result_id'] = result.id
 
         buffer.close()
@@ -358,9 +357,10 @@ def graph_view(request):
             'a': round(parameter_a, 3),
             'b': round(parameter_b, 3),
             'result_id': result.id,
-            'graphic_result': result,
+            'graphic_result': result,  # Передаем объект результата для отображения в graphs.html
         })
 
+    # Add parameters to context for display
     if param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
