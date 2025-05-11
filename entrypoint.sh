@@ -18,5 +18,10 @@ python manage.py createsuperuser \
   --username admin \
   --email admin@example.com || true
 
-# Запуск сервера
-exec gunicorn --bind 0.0.0.0:8000 website.wsgi:application
+# Запуск Gunicorn с увеличенным таймаутом и несколькими воркерами
+exec gunicorn website.wsgi:application \
+  --bind 0.0.0.0:8000 \
+  --workers 4 \
+  --threads 4 \
+  --timeout 600 \
+  --worker-class gthread
