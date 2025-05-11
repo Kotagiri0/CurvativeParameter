@@ -1,0 +1,5 @@
+[MAIN]
+ignore=.venv, migrations, __pycache__, .pytest_cache, docs, manage.py, apps.py, docker-compose.yml, db.sqlite3
+[FORMAT]
+max-line-length=120
+
