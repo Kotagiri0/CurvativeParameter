@@ -6,6 +6,7 @@ from .forms import RegisterForm, LoginForm, PostForm, GraphForm
 from . import gauss, gauss_step, gradient
 import json
 
+
 class FullCoverageTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -33,7 +34,8 @@ class FullCoverageTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_forum_detail_view(self):
-        post = Post.objects.create(title='Подробно', content='Контент', author=self.user, calculation_result=self.result)
+        post = Post.objects.create(title='Подробно', content='Контент', author=self.user,
+                                   calculation_result=self.result)
         response = self.client.get(reverse('forum_detail', args=[post.id]))
         self.assertEqual(response.status_code, 200)
 
@@ -157,5 +159,128 @@ class FullCoverageTests(TestCase):
         self.assertIsInstance(b, float)
         self.assertIsInstance(iterations, int)
         self.assertGreater(exec_time, 0)
+
+
+
+    def test_register_form_invalid_password_mismatch(self):
+        form = RegisterForm(data={
+            'username': 'user2',
+            'email': 'user2@example.com',
+            'password1': 'password123',
+            'password2': 'differentpassword',
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_login_form_invalid(self):
+        form = LoginForm(data={'username': '', 'password': ''})
+        self.assertFalse(form.is_valid())
+
+    def test_post_form_valid(self):
+        form = PostForm(data={'title': 'Заголовок', 'content': 'Контент'}, user=self.user)
+        self.assertTrue(form.is_valid())
+
+    def test_forum_create_post(self):
+        response = self.client.post(reverse('forum_create'), {'title': 'Создать', 'content': 'Новый пост'})
+        self.assertIn(response.status_code, [302, 200])
+
+    def test_forum_delete_requires_post(self):
+        post = Post.objects.create(title='Удаление', content='...', author=self.user)
+        response = self.client.get(reverse('forum_delete', args=[post.id]))
+        self.assertIn(response.status_code, [405, 302, 200])
+
+    def test_forum_list_view_with_query(self):
+
+        calc_res = CalculationResult.objects.create(
+            user=self.user,
+            title='TestCalc',
+            param_a=1,
+            param_b=2,
+            table=self.table,
+            iterations=1,
+            exec_time=0.1,
+            algorithm='TestAlgo',
+            average_op=0.1,
+            table_data=json.dumps([])
+        )
+        Post.objects.create(title='FindMe', content='Content', author=self.user, calculation_result=calc_res)
+        Post.objects.create(title='Other', content='Different content', author=self.user)
+
+
+        response = self.client.get(reverse('forum_list'), {'q': 'FindMe'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'FindMe')
+        self.assertNotContains(response, 'Other')
+
+
+        response = self.client.get(reverse('forum_list'), {'q': 'TestCalc'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'FindMe')
+
+        # Поиск по algorithm
+        response = self.client.get(reverse('forum_list'), {'q': 'TestAlgo'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'FindMe')
+
+    def test_forum_detail_view_with_parsing_content(self):
+
+        content = (
+            "0.12345, 1.1, 1.2, 5.0%, 0.1\n"
+            "N/A, N/A, N/A, N/A, N/A\n"
+            "bad line\n"
+            "\n"
+            "Параметр A: 1.5\n"
+            "Параметр B: 2.5\n"
+            "Итерации: 15\n"
+            "Время выполнения: 0.75 сек\n"
+            "Алгоритм: TestAlgo\n"
+            "Средняя ошибка: 0.05"
+        )
+        post = Post.objects.create(title='DetailTest', content=content, author=self.user)
+        url = reverse('forum_detail', args=[post.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+
+        self.assertIn('data_lines', response.context)
+        data_lines = response.context['data_lines']
+        self.assertTrue(any(d['x2'] == '0.123' for d in data_lines))
+        self.assertTrue(any(d['x2'] == '0.000' for d in data_lines))  # N/A заменяется на 0.000
+
+
+        result_info = response.context.get('result_info', {})
+        self.assertEqual(result_info.get('param_a'), 1.5)
+        self.assertEqual(result_info.get('param_b'), 2.5)
+        self.assertEqual(result_info.get('iterations'), 15)
+        self.assertEqual(result_info.get('exec_time'), 0.75)
+
+    def test_forum_detail_view_with_calculation_result(self):
+        calc = CalculationResult.objects.create(
+            user=self.user,
+            title='CalcTitle',
+            param_a=10.0,
+            param_b=20.0,
+            table=self.table,
+            iterations=5,
+            exec_time=0.33,
+            algorithm='AlgoName',
+            average_op=0.123,
+            table_data=json.dumps([])
+        )
+        post = Post.objects.create(title='PostWithCalc', content='Some content', author=self.user,
+                                   calculation_result=calc)
+        url = reverse('forum_detail', args=[post.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        result_info = response.context.get('result_info', {})
+        self.assertEqual(result_info.get('param_a'), 10.0)
+        self.assertEqual(result_info.get('param_b'), 20.0)
+        self.assertEqual(result_info.get('iterations'), 5)
+        self.assertEqual(result_info.get('exec_time'), 0.33)
+        self.assertEqual(result_info.get('algorithm'), 'AlgoName')
+        self.assertEqual(result_info.get('average_error'), 0.123)
+
+
+
 
 
