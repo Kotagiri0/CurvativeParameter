@@ -19,7 +19,6 @@ class Table(models.Model):
     points = models.ManyToManyField(Point, related_name="tables")
     temperature = models.FloatField()
 
-
 class CalculationResult(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
     title = models.CharField(max_length=200, default="Без названия", verbose_name="Название расчета")

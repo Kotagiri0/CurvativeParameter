@@ -368,7 +368,6 @@ def graph_view(request):
     print(f"Initial data: {initial_data}")
     print(f"Table ID from session: {table_id}")
     return render(request, 'graphs.html', context)
-
 @login_required
 def databases(request):
     tables = Table.objects.all()
