@@ -677,10 +677,14 @@ def login_user(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
+                print(f"User {user.username} вошёл в систему.")
                 return redirect('home')
+            else:
+                print("Аутентификация не прошла.")
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
 @login_required
 def logout_user(request):
     logout(request)
