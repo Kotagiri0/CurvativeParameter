@@ -1,27 +1,31 @@
 #!/bin/bash
 set -e
 
-# Ожидание MySQL с таймаутом
-echo "Waiting for MySQL..."
-timeout 60 bash -c 'until mysqladmin ping -h mysql -u myuser -pmypassword --silent; do sleep 2; done'
-echo "MySQL is ready!"
+echo "Using DATABASE_URL, skipping direct postgres env checks"
 
 # Применение миграций
-python manage.py migrate --no-input
+echo "Applying database migrations..."
+python manage.py migrate --noinput
 
 # Сбор статики
-python manage.py collectstatic --no-input --clear
+echo "Collecting static files..."
+python manage.py collectstatic --noinput --clear
 
-# Создание суперпользователя
-python manage.py createsuperuser \
-  --noinput \
-  --username admin \
-  --email admin@example.com || true
+# Создание суперпользователя (если переменные заданы)
+if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_EMAIL" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
+    echo "Creating superuser..."
+    python manage.py createsuperuser \
+        --noinput \
+        --username "$DJANGO_SUPERUSER_USERNAME" \
+        --email "$DJANGO_SUPERUSER_EMAIL" || \
+        echo "Superuser creation skipped (already exists or failed)"
+fi
 
-# Запуск Gunicorn с увеличенным таймаутом и несколькими воркерами
+# Запуск Gunicorn
+echo "Starting Gunicorn..."
 exec gunicorn website.wsgi:application \
-  --bind 0.0.0.0:8000 \
-  --workers 4 \
-  --threads 4 \
-  --timeout 600 \
-  --worker-class gthread
+    --bind 0.0.0.0:8000 \
+    --workers 4 \
+    --threads 2 \
+    --timeout 120 \
+    --worker-class gthread
