@@ -48,13 +48,19 @@ class CalculationResult(models.Model):
         verbose_name_plural = "Результаты расчетов"
 
 
+from cloudinary_storage.storage import MediaCloudinaryStorage
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    avatar = models.ImageField(
+        storage=MediaCloudinaryStorage(),
+        upload_to='avatars/',
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"Profile of {self.user.username}"
-
 
 class Post(models.Model):
     title = models.CharField(max_length=200, verbose_name="Заголовок")
