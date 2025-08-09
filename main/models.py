@@ -62,12 +62,20 @@ class Profile(models.Model):
     def __str__(self):
         return f"Profile of {self.user.username}"
 
+from cloudinary_storage.storage import MediaCloudinaryStorage
+
 class Post(models.Model):
     title = models.CharField(max_length=200, verbose_name="Заголовок")
     content = models.TextField(verbose_name="Содержание")
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts", verbose_name="Автор")
     created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
-    image = models.ImageField(upload_to="post_images/", null=True, blank=True, verbose_name="Изображение")
+    image = models.ImageField(
+        storage=MediaCloudinaryStorage(),
+        upload_to="post_images/",
+        null=True,
+        blank=True,
+        verbose_name="Изображение"
+    )
     calculation_result = models.ForeignKey('CalculationResult', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
