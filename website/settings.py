@@ -3,16 +3,16 @@ from pathlib import Path
 import dj_database_url
 from django.core.management.utils import get_random_secret_key
 
-# Build paths
+# ===== Базовые пути =====
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ===== Core Settings =====
+# ===== Безопасность =====
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', get_random_secret_key())
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if not DEBUG else ['*']
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if 'localhost' not in host]
 
-# ===== Application Definition =====
+# ===== Приложения =====
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,9 +21,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'whitenoise.runserver_nostatic',  # Для локальной разработки
-    'main',  # Ваше основное приложение
+    'main',
+
+    # Cloudinary
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
+# ===== Middleware =====
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -37,7 +42,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'website.urls'
 
-# ===== Templates =====
+# ===== Шаблоны =====
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -56,7 +61,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'website.wsgi.application'
 
-# ===== Database =====
+# ===== База данных =====
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', 'postgres://user:pass@localhost:5432/db'),
@@ -65,7 +70,14 @@ DATABASES = {
     )
 }
 
-# ===== Password Validation =====
+# ===== Cloudinary =====
+CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
+if not CLOUDINARY_URL:
+    raise RuntimeError("❌ Переменная CLOUDINARY_URL не найдена в окружении — добавь её!")
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# ===== Пароли =====
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -73,23 +85,23 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ===== Internationalization =====
+# ===== Локализация =====
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# ===== Static Files =====
+# ===== Статика =====
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ===== Media Files =====
+# ===== Медиа =====
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# ===== Security =====
+# ===== Безопасность =====
 if not DEBUG:
     SECURE_HSTS_SECONDS = 2_592_000  # 30 дней
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -99,21 +111,20 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ===== Render.com Specific =====
+# ===== Render.com =====
 if os.getenv('RENDER'):
     ALLOWED_HOSTS.append(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
-    # Используем статические IP Render для исходящих запросов
     RENDER_OUTBOUND_IPS = [
         '44.229.227.142',
         '54.188.71.94',
         '52.13.128.108'
     ]
 
-# ===== Custom Settings =====
+# ===== Прочее =====
 LOGIN_URL = 'login'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ===== Logging =====
+# ===== Логирование =====
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
