@@ -43,7 +43,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'website.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -65,19 +64,29 @@ WSGI_APPLICATION = 'website.wsgi.application'
 # ===== База данных =====
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'mydb'),
-        'USER': os.getenv('DB_USER', 'myuser'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'mypassword'),
-        'HOST': os.getenv('DB_HOST', 'postgres'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
 # ===== Cloudinary =====
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Если находим файл `.env` — читаем его
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            if line.strip() and not line.startswith('#'):
+                key, value = line.strip().split('=', 1)
+                os.environ.setdefault(key, value)
+
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
 if not CLOUDINARY_URL:
-    raise RuntimeError("❌ Переменная CLOUDINARY_URL не найдена в окружении — добавь её!")
+    raise RuntimeError("❌ CLOUDINARY_URL не найдена!")
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = ''
