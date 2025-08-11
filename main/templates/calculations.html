@@ -23,6 +23,9 @@
               <option value="gradient">Метод градиентного спуска</option>
               <option value="gradient_step">Метод градиентного спуска с переменным шагом</option>
               <option value="otzhig">Метод отжига</option>
+              {% for algo in custom_algorithms %}
+                <option value="custom_{{ algo.id }}">Пользовательский: {{ algo.name }}</option>
+              {% endfor %}
             </select>
           </div>
           <!-- Выбор таблицы -->
@@ -39,6 +42,9 @@
           <i class="fas fa-rocket"></i> Выполнить
         </button>
       </form>
+      <a href="{% url 'upload_algorithm' %}" class="cp-btn cp-btn-primary" style="margin-top: 10px;">
+        <i class="fas fa-upload"></i> Загрузить свой алгоритм
+      </a>
     </div>
 
     <!-- Параметры -->
@@ -59,13 +65,12 @@
 </section>
 
 <style>
-  /* Основные стили */
+  /* --- Дизайн из второй версии --- */
   .cp-section {
     max-width: 1200px;
     margin: 40px auto;
     padding: 0 5%;
   }
-
   .cp-section h2 {
     font-size: 1.8rem;
     margin-bottom: 25px;
@@ -77,15 +82,11 @@
     border-bottom: 2px solid var(--accent-color);
     animation: fadeSlideIn 0.7s ease-out;
   }
-
-  /* Сетка карточек */
   .cp-calculations-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     gap: 20px;
   }
-
-  /* Карточка */
   .cp-calc-card {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -96,48 +97,39 @@
     animation: fadeSlideIn 0.5s ease-out;
     box-sizing: border-box;
   }
-
   [data-theme="dark"] .cp-calc-card {
     background: rgba(30, 30, 30, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
-
   .cp-calc-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px var(--shadow-color, rgba(0, 0, 0, 0.2));
   }
-
   .cp-calc-card h3 {
     margin: 0 0 15px;
     font-size: 1.3rem;
     color: var(--accent-color);
   }
-
-  /* Форма */
   .cp-form {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
-
   .cp-form-content {
     width: 100%;
     margin-bottom: 15px;
     padding: 0 10px;
     box-sizing: border-box;
   }
-
   .cp-form-group {
     margin-bottom: 20px;
   }
-
   .cp-form-group label {
     display: block;
     font-size: 1rem;
     color: var(--text-color);
     margin-bottom: 8px;
   }
-
   .cp-form-group select {
     width: 100%;
     max-width: 100%;
@@ -150,34 +142,19 @@
     transition: border-color 0.3s ease, background 0.3s ease;
     box-sizing: border-box;
   }
-
   [data-theme="dark"] .cp-form-group select {
     border: 2px solid rgba(255, 255, 255, 0.1);
     background: rgba(30, 30, 30, 0.7);
     color: var(--tag-color);
   }
-
   .cp-form-group select:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.3);
     outline: none;
   }
-
   [data-theme="dark"] .cp-form-group select:focus {
     background: rgba(50, 50, 50, 0.7);
   }
-
-  .cp-form-group select option {
-    background: var(--background-color);
-    color: var(--text-color);
-  }
-
-  [data-theme="dark"] .cp-form-group select option {
-    background: rgba(30, 30, 30, 0.9);
-    color: var(--tag-color);
-  }
-
-  /* Кнопка */
   .cp-btn {
     padding: 12px 24px;
     border-radius: 8px;
@@ -190,7 +167,6 @@
     text-decoration: none;
     box-sizing: border-box;
   }
-
   .cp-btn-primary {
     background: var(--accent-color);
     color: white;
@@ -200,28 +176,14 @@
     margin-left: 10px;
     margin-right: 10px;
   }
-
   .cp-btn-primary:hover {
     background: #2980b9;
     transform: scale(1.05);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   }
-
-  .cp-btn-primary i {
-    transition: transform 0.3s ease;
-  }
-
-  .cp-btn-primary:hover i {
-    transform: scale(1.2);
-  }
-
-  /* Кнопка перехода к графикам */
-  .cp-btn-graphs {
-    margin-top: 20px;
-    margin-bottom: 15px;
-  }
-
-  /* Параметры */
+  .cp-btn-primary i { transition: transform 0.3s ease; }
+  .cp-btn-primary:hover i { transform: scale(1.2); }
+  .cp-btn-graphs { margin-top: 20px; margin-bottom: 15px; }
   .cp-params-tags {
     display: flex;
     flex-wrap: wrap;
@@ -230,7 +192,6 @@
     margin-top: 15px;
     margin-bottom: 20px;
   }
-
   .cp-table-tag {
     background: var(--tag-bg);
     color: var(--tag-color);
@@ -239,12 +200,7 @@
     font-size: 0.9rem;
     transition: transform 0.3s ease;
   }
-
-  .cp-table-tag:hover {
-    transform: scale(1.1);
-  }
-
-  /* Таблица результатов */
+  .cp-table-tag:hover { transform: scale(1.1); }
   .cp-table-container {
     margin-top: 10px;
     overflow-x: auto;
@@ -252,68 +208,11 @@
     transition: max-height 0.4s ease-out, padding 0.3s ease;
     padding: 0;
   }
-
   .cp-table-container.open {
     max-height: 600px;
     padding: 15px 0;
     transition: max-height 0.4s ease-in, padding 0.3s ease;
   }
-
-  .cp-table-container h4 {
-    font-size: 1.1rem;
-    color: var(--accent-color);
-    margin-bottom: 10px;
-  }
-
-  .cp-result-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-
-  [data-theme="dark"] .cp-result-table {
-    background: rgba(30, 30, 30, 0.3);
-  }
-
-  .cp-result-table th,
-  .cp-result-table td {
-    padding: 10px;
-    text-align: center;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    color: var(--text-color);
-    font-size: 0.9rem;
-  }
-
-  [data-theme="dark"] .cp-result-table th,
-  [data-theme="dark"] .cp-result-table td {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .cp-result-table th {
-    background: var(--accent-color);
-    color: white;
-    font-weight: 600;
-  }
-
-  .cp-result-table tbody tr:nth-child(even) {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  [data-theme="dark"] .cp-result-table tbody tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .cp-result-table tbody tr:hover {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  [data-theme="dark"] .cp-result-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  /* Кнопка сворачивания/разворачивания таблицы */
   .cp-table-toggle {
     width: calc(100% - 20px);
     background: var(--accent-color);
@@ -330,113 +229,22 @@
     margin: 15px 10px 0;
     box-sizing: border-box;
   }
-
-  .cp-table-toggle:hover {
-    background: #2980b9;
-    transform: scale(1.02);
-  }
-
-  .cp-table-toggle i {
-    transition: transform 0.3s;
-  }
-
-  .cp-table-toggle.open i {
-    transform: rotate(180deg);
-  }
-
-  /* Оверлей загрузки */
+  .cp-table-toggle:hover { background: #2980b9; transform: scale(1.02); }
+  .cp-table-toggle i { transition: transform 0.3s; }
+  .cp-table-toggle.open i { transform: rotate(180deg); }
   .cp-loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease-out;
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; animation: fadeIn 0.3s ease-out;
   }
-
-  .cp-loading-overlay.active {
-    display: flex;
-  }
-
+  .cp-loading-overlay.active { display: flex; }
   .cp-loading-gif {
-    max-width: 200px;
-    max-height: 200px;
-    border-radius: 10px;
-    object-fit: contain;
+    max-width: 200px; max-height: 200px;
+    border-radius: 10px; object-fit: contain;
   }
-
-  /* Анимации */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Адаптивность */
-  @media (max-width: 992px) {
-    .cp-calculations-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .cp-section {
-      padding: 0 3%;
-      margin: 20px auto;
-    }
-
-    .cp-calc-card {
-      padding: 15px;
-    }
-
-    .cp-calc-card h3 {
-      font-size: 1.2rem;
-    }
-
-    .cp-form-content {
-      padding: 0 5px;
-    }
-
-    .cp-form-group select {
-      font-size: 0.85rem;
-      padding: 8px 10px;
-    }
-
-    .cp-btn-primary {
-      padding: 10px 20px;
-      font-size: 0.9rem;
-      width: calc(100% - 10px);
-      margin-left: 5px;
-      margin-right: 5px;
-    }
-
-    .cp-table-tag {
-      font-size: 0.85rem;
-      padding: 5px 10px;
-    }
-
-    .cp-loading-gif {
-      max-width: 150px;
-      max-height: 150px;
-    }
-
-    .cp-result-table th,
-    .cp-result-table td {
-      font-size: 0.8rem;
-      padding: 8px;
-    }
-
-    .cp-table-toggle {
-      font-size: 0.9rem;
-      padding: 8px;
-      margin: 10px 5px 0;
-      width: calc(100% - 10px);
-    }
-  }
+  @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
 </style>
 
 <script>
@@ -449,8 +257,7 @@
 
     tableContainer.addEventListener('click', (e) => {
       if (e.target.closest('.cp-table-toggle')) {
-        const button = e.target.closest('.cp-table-toggle');
-        toggleTable(button);
+        toggleTable(e.target.closest('.cp-table-toggle'));
       }
     });
 
@@ -461,37 +268,24 @@
 
       try {
         const formData = new FormData(form);
-        console.log('Отправка запроса на:', form.action);
         const response = await fetch(form.action, {
           method: 'POST',
           body: formData,
-          headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-          },
+          headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
         });
-
-        console.log('Статус ответа:', response.status);
         const text = await response.text();
-        console.log('Текст ответа:', text);
 
         let data;
-        try {
-          data = JSON.parse(text);
-          console.log('Разобранные данные:', data);
-        } catch (jsonError) {
-          console.error('Ошибка парсинга JSON:', jsonError);
-          throw new Error('Сервер вернул невалидный JSON');
-        }
+        try { data = JSON.parse(text); }
+        catch { throw new Error('Сервер вернул невалидный JSON'); }
 
         if (response.ok) {
           updateResults(data);
           resultsContainer.style.display = 'block';
         } else {
-          console.error('Ошибка сервера:', response.status, data);
           alert(`Ошибка сервера: ${data.error || 'Неизвестная ошибка'}`);
         }
       } catch (error) {
-        console.error('Ошибка запроса:', error);
         alert(`Произошла ошибка: ${error.message}`);
       } finally {
         loadingOverlay.classList.remove('active');
@@ -510,37 +304,23 @@
         otzhig: 'Отжиг'
       };
 
-      if (data.algorithm && methodNames[data.algorithm]) {
+      if (data.algorithm?.startsWith('custom_')) {
+        paramsTags.innerHTML += `<span class="cp-table-tag">Метод: Пользовательский</span>`;
+      } else if (data.algorithm && methodNames[data.algorithm]) {
         paramsTags.innerHTML += `<span class="cp-table-tag">Метод: ${methodNames[data.algorithm]}</span>`;
       }
 
-      if (data.a && data.b) {
-        paramsTags.innerHTML += `
-          <span class="cp-table-tag">A<sub>12</sub> = ${data.a}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = ${data.b}</span>
-        `;
-      } else if (data.c && data.d) {
-        paramsTags.innerHTML += `
-          <span class="cp-table-tag">A<sub>12</sub> = ${data.c}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = ${data.d}</span>
-        `;
-      } else if (data.e && data.f) {
-        paramsTags.innerHTML += `
-          <span class="cp-table-tag">A<sub>12</sub> = ${data.e}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = ${data.f}</span>
-        `;
-      } else if (data.g && data.h) {
-        paramsTags.innerHTML += `
-          <span class="cp-table-tag">A<sub>12</sub> = ${data.g}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = ${data.h}</span>
-        `;
-      } else if (data.i && data.j) {
-        paramsTags.innerHTML += `
-          <span class="cp-table-tag">A<sub>12</sub> = ${data.i}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = ${data.j}</span>
-        `;
-      } else {
-        console.warn('Параметры A12 и A21 не найдены в ответе');
+      const paramPairs = [
+        ['a','b'], ['c','d'], ['e','f'], ['g','h'], ['i','j']
+      ];
+      for (const [p1, p2] of paramPairs) {
+        if (data[p1] && data[p2]) {
+          paramsTags.innerHTML += `
+            <span class="cp-table-tag">A<sub>12</sub> = ${data[p1]}</span>
+            <span class="cp-table-tag">A<sub>21</sub> = ${data[p2]}</span>
+          `;
+          break;
+        }
       }
 
       paramsTags.innerHTML += `
@@ -548,8 +328,7 @@
         <span class="cp-table-tag">Время: ${data.exec_time || 'N/A'}</span>
       `;
 
-      if (data.table_data && Array.isArray(data.table_data) && data.table_data.length > 0) {
-        console.log('Table data:', data.table_data); // Для отладки
+      if (Array.isArray(data.table_data) && data.table_data.length) {
         tableContainer.innerHTML = `
           <button class="cp-table-toggle">
             <span>Показать таблицу результатов</span>
@@ -571,10 +350,10 @@
                 ${data.table_data.map(row => `
                   <tr>
                     <td>${(row.x2 || 0).toFixed(3)}</td>
-                    <td>${row.gmod === null || row.gmod === undefined ? 'N/A' : Number(row.gmod).toFixed(2)}</td>
-                    <td>${row.gexp === null || row.gexp === undefined ? 'N/A' : Number(row.gexp).toFixed(2)}</td>
-                    <td>${row.sigma === null || row.sigma === undefined ? 'N/A' : Number(row.sigma).toFixed(1)}</td>
-                    <td>${row.delta === null || row.delta === undefined ? 'N/A' : Number(row.delta).toFixed(2)}</td>
+                    <td>${row.gmod == null ? 'N/A' : Number(row.gmod).toFixed(2)}</td>
+                    <td>${row.gexp == null ? 'N/A' : Number(row.gexp).toFixed(2)}</td>
+                    <td>${row.sigma == null ? 'N/A' : Number(row.sigma).toFixed(1)}</td>
+                    <td>${row.delta == null ? 'N/A' : Number(row.delta).toFixed(2)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -586,18 +365,7 @@
 
     function toggleTable(button) {
       const content = button.nextElementSibling;
-      if (!content) {
-        console.error('Контейнер таблицы не найден');
-        return;
-      }
-      const icon = button.querySelector('i');
-      if (!icon) {
-        console.error('Иконка не найдена');
-        return;
-      }
-
-      console.log('Тоггл таблицы:', content.classList.contains('open') ? 'Скрыть' : 'Показать');
-
+      if (!content) return;
       if (content.classList.contains('open')) {
         content.classList.remove('open');
         button.querySelector('span').textContent = 'Показать таблицу результатов';

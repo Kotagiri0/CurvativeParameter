@@ -47,7 +47,23 @@ class CalculationResult(models.Model):
         verbose_name = "Результат расчета"
         verbose_name_plural = "Результаты расчетов"
 
+from django.contrib.auth.models import User
+from django.db import models
+from django.utils import timezone
 
+class CustomAlgorithm(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="custom_algorithms")
+    name = models.CharField(max_length=200, verbose_name="Название алгоритма")
+    code = models.TextField(verbose_name="Код алгоритма")  # Храним код как текст
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Дата создания")
+    description = models.TextField(blank=True, verbose_name="Описание алгоритма")
+
+    def __str__(self):
+        return f"{self.name} by {self.user.username}"
+
+    class Meta:
+        verbose_name = "Пользовательский алгоритм"
+        verbose_name_plural = "Пользовательские алгоритмы"
 from cloudinary_storage.storage import MediaCloudinaryStorage
 
 class Profile(models.Model):

@@ -21,6 +21,7 @@ from main.views import (
     forum_create,
     forum_delete,
     forum_edit,
+    upload_algorithm,  # Новое представление
 )
 
 urlpatterns = [
@@ -42,4 +43,5 @@ urlpatterns = [
     path('forum/delete/<int:pk>/', forum_delete, name='forum_delete'),
     path('forum/edit/<int:pk>/', forum_edit, name='forum_edit'),
     path('forum/share/<int:result_id>/', share_calculation, name='share_calculation'),
+    path('algorithms/upload/', upload_algorithm, name='upload_algorithm'),  # Маршрут для загрузки алгоритма
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

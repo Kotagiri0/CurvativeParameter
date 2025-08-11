@@ -11,17 +11,32 @@ from io import BytesIO
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models.expressions import result
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from .forms import RegisterForm, LoginForm, GraphForm, UserUpdateForm, ProfileUpdateForm, PostForm
-from .models import Point, Table, CalculationResult, Profile, Post
-from django.http import JsonResponse
+from .forms import RegisterForm, LoginForm, GraphForm, UserUpdateForm, ProfileUpdateForm, PostForm, CustomAlgorithmForm
+from .models import Point, Table, CalculationResult, Profile, Post, CustomAlgorithm
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
-from .forms import LoginForm
+from RestrictedPython import compile_restricted, safe_globals
+
 param_a, param_b = 0, 0
+
+# Определение функций выше
+def func(a, b, x2, tables, table_ind):
+    rt = tables[table_ind].temperature * 8.314462618
+    x1 = 1 - x2
+    return rt * x1 * x2 * (x1 * a + x2 * b)
+
+def sum_of_deviations(a, b, tables, table_ind, l_points):
+    sum_val = 0
+    if not l_points:
+        return 0
+    for i in range(len(l_points)):
+        x2 = l_points[i][0]
+        ge = l_points[i][1]
+        sum_val += (func(a, b, x2, tables, table_ind) - ge) ** 2
+    return sum_val / len(l_points)
 
 @login_required
 def forum_list(request):
@@ -41,24 +56,20 @@ def forum_list(request):
 def forum_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    # Получаем расчетные данные, если они существуют
     try:
-        calculation_result = post.calculation_result  # Исправлено на calculation
-    except AttributeError:
-        print(f"Ошибка: поле calculation не найдено в модели Post. Доступные поля: {dir(post)}")
-        calculation_result = None
-    except CalculationResult.DoesNotExist:
+        calculation_result = post.calculation_result
+    except (AttributeError, CalculationResult.DoesNotExist):
+        print(f"Ошибка: поле calculation_result не найдено в модели Post. Доступные поля: {dir(post)}")
         calculation_result = None
 
-    # Разделяем содержимое поста по строкам и парсим данные
     lines = post.content.split("\n")
     data_lines = []
 
     for line in lines:
-        if line.strip():  # Игнорируем пустые строки
+        if line.strip():
             try:
                 parts = line.split(',')
-                if len(parts) == 5:  # Если строка имеет 5 значений
+                if len(parts) == 5:
                     x2 = parts[0].strip()
                     gexp = parts[1].strip()
                     gmod = parts[2].strip()
@@ -66,11 +77,11 @@ def forum_detail(request, post_id):
                     delta = parts[4].strip()
 
                     try:
-                        x2 = str(float(x2))[0:5] if x2 != 'N/A' else '0.000'
-                        gexp = float(gexp) if gexp != 'N/A' else '0.0'
-                        gmod = float(gmod) if gmod != 'N/A' else '0.0'
-                        sigma = float(sigma) if sigma != 'N/A' else '0.0'
-                        delta = float(delta) if delta != 'N/A' else '0.0'
+                        x2 = str(float(x2))[:5] if x2 != 'N/A' else '0.000'
+                        gexp = float(gexp) if gexp != 'N/A' else 0.0
+                        gmod = float(gmod) if gmod != 'N/A' else 0.0
+                        sigma = float(sigma) if sigma != 'N/A' else 0.0
+                        delta = float(delta) if delta != 'N/A' else 0.0
                     except ValueError as e:
                         print(f"Ошибка преобразования строки в числа: {line}, ошибка: {e}")
                         continue
@@ -85,7 +96,6 @@ def forum_detail(request, post_id):
             except Exception as e:
                 print(f"Ошибка при обработке строки: {line}, ошибка: {e}")
 
-    # Получаем информацию о расчете, если она существует
     if calculation_result:
         result_info = {
             'param_a': calculation_result.param_a,
@@ -96,7 +106,6 @@ def forum_detail(request, post_id):
             'average_error': calculation_result.average_op,
         }
     else:
-        # Если calculation_result недоступен, парсим данные из post.content
         result_info = {}
         for line in lines:
             if line.startswith("Параметр A:"):
@@ -114,14 +123,12 @@ def forum_detail(request, post_id):
                 error_str = line.split(":")[1].strip()
                 result_info['average_error'] = float(error_str.replace("%", "")) if error_str != 'N/A' else None
 
-    # Передаем данные в шаблон
     return render(request, 'forum_detail.html', {
         'post': post,
         'data_lines': data_lines,
         'result_info': result_info
     })
 
-# Создание нового поста
 @login_required
 def forum_create(request):
     if request.method == 'POST':
@@ -142,7 +149,6 @@ def forum_delete(request, pk):
     if post.author == request.user and request.method == "POST":
         post.delete()
     return redirect('forum_list')
-
 
 @login_required
 def forum_edit(request, pk):
@@ -176,7 +182,6 @@ def share_calculation(request, result_id):
             post.author = request.user
             post.calculation_result = result
 
-            # Формируем содержимое поста с данными расчета
             table_data = result.get_table_data()
             table_data_str = "Нет данных таблицы."
 
@@ -192,7 +197,6 @@ def share_calculation(request, result_id):
                 except Exception as e:
                     table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
 
-            # Формируем пост content
             content_lines = [
                 f"Результат расчета #{result.id}:",
                 f"Название: {result.title}",
@@ -215,14 +219,13 @@ def share_calculation(request, result_id):
 
             content_lines.append("Данные таблицы:")
             content_lines.append(table_data_str)
-            content_lines.append("")  # Пустая строка перед пользовательским комментарием
+            content_lines.append("")
 
             user_content = form.cleaned_data['content'].strip()
-            if user_content:  # Добавляем комментарий только если он не пустой
+            if user_content:
                 content_lines.append(user_content)
 
             post.content = "\n".join(content_lines)
-
             print(f"Post content:\n{post.content}")
             post.save()
             messages.success(request, 'Результат расчета успешно опубликован на форуме!')
@@ -244,7 +247,7 @@ def share_calculation(request, result_id):
 
         initial_data = {
             'title': f'Результат расчета #{result.id}',
-            'content': ""  # Пустое начальное значение
+            'content': ""
         }
         form = PostForm(initial=initial_data)
 
@@ -252,13 +255,11 @@ def share_calculation(request, result_id):
 
 @login_required
 def graph_view(request):
-    # Get parameters from session
     result_id = request.session.get('result_id')
     table_id = request.session.get('table_id')
     param_a = request.session.get('param_a')
     param_b = request.session.get('param_b')
 
-    # Set initial form data
     initial_data = {}
     if result_id:
         try:
@@ -283,23 +284,20 @@ def graph_view(request):
         if param_b is not None:
             initial_data['parameter_b'] = round(param_b, 3)
 
-    form = GraphForm(request.POST or None, initial=initial_data)
+    form = GraphForm(request.POST or None, initial=initial_data, user=request.user)
     context = {'form': form}
 
     if request.method == 'POST' and form.is_valid():
-        # Get form data
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
-        # Save parameters and table choice to session
         request.session['table_id'] = table_id
         request.session['param_a'] = parameter_a
         request.session['param_b'] = parameter_b
         request.session.modified = True
 
-        # Create plot data
         new_y = []
         new_x = np.linspace(0, 1, 10000)
         xx = []
@@ -314,7 +312,6 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
-        # Build the graph
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(new_x, new_y, color='red', marker='o', markersize=1)
         ax.scatter(xx, yy, color='b')
@@ -323,14 +320,12 @@ def graph_view(request):
         ax.set_ylabel(r'$G^{E}$')
         ax.grid(True)
 
-        # Save graph to memory for display
         buffer = BytesIO()
         plt.savefig(buffer, format='png', bbox_inches='tight')
         buffer.seek(0)
         image_png = buffer.getvalue()
         graphic = base64.b64encode(image_png).decode('utf-8')
 
-        # Формируем table_data (для отображения, но не для сохранения)
         table_data = []
         for x, y_exp in zip(xx, yy):
             x1 = 1 - x
@@ -346,7 +341,18 @@ def graph_view(request):
                 "delta": delta
             })
 
-        # Update session with the new result_id
+        result = CalculationResult.objects.create(
+            user=request.user,
+            title=table.title,
+            algorithm='Graph View Calculation',
+            param_a=parameter_a,
+            param_b=parameter_b,
+            table=table,
+            iterations=0,
+            average_op=sum(d['sigma'] for d in table_data) / len(table_data) if table_data else 0,
+            exec_time=0,
+            table_data=json.dumps(table_data)
+        )
         request.session['result_id'] = result.id
 
         buffer.close()
@@ -357,10 +363,9 @@ def graph_view(request):
             'a': round(parameter_a, 3),
             'b': round(parameter_b, 3),
             'result_id': result.id,
-            'graphic_result': result,  # Передаем объект результата для отображения в graphs.html
+            'graphic_result': result,
         })
 
-    # Add parameters to context for display
     if param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
@@ -368,6 +373,7 @@ def graph_view(request):
     print(f"Initial data: {initial_data}")
     print(f"Table ID from session: {table_id}")
     return render(request, 'graphs.html', context)
+
 @login_required
 def databases(request):
     tables = Table.objects.all()
@@ -377,12 +383,9 @@ def databases(request):
 @login_required
 def delete_result(request, result_id):
     result = get_object_or_404(CalculationResult, id=result_id)
-
     if request.user == result.user:
         result.delete()
-
     return redirect('profile')
-
 
 @login_required
 def profile(request):
@@ -393,7 +396,6 @@ def profile(request):
         context['user_results'] = user_results
         user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
-
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -402,7 +404,6 @@ def profile(request):
     else:
         user_form = UserUpdateForm(instance=request.user)
         profile_form = ProfileUpdateForm(instance=request.user.profile)
-
     context.update({
         'user': request.user,
         'user_form': user_form,
@@ -416,51 +417,44 @@ def update_profile(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
-        avatar = request.FILES.get('avatar')  # Получаем файл аватара из формы
-
+        avatar = request.FILES.get('avatar')
         user = request.user
-
-        # Проверка на уникальность имени пользователя
         if User.objects.exclude(pk=user.pk).filter(username=username).exists():
             messages.error(request, 'Имя пользователя уже занято.')
             return redirect('profile')
-
-        # Проверка на уникальность email
         if User.objects.exclude(pk=user.pk).filter(email=email).exists():
             messages.error(request, 'Электронная почта уже используется.')
             return redirect('profile')
-
         try:
-            # Обновляем данные пользователя
             user.username = username
             user.email = email
             user.save()
-
-            # Обновляем или создаем профиль с аватаром
             profile, created = Profile.objects.get_or_create(user=user)
-            if avatar:  # Если аватар был загружен
+            if avatar:
                 profile.avatar = avatar
                 profile.save()
-
             messages.success(request, 'Профиль успешно обновлен.')
         except ValueError as e:
             messages.error(request, f'Ошибка при обновлении профиля: {str(e)}')
-
         return redirect('profile')
-
-    # Если метод не POST, перенаправляем на страницу профиля
     return redirect('profile')
 
 @login_required
 def calculations(request):
     tables = Table.objects.all()
-    context = {"tables": tables}
+    custom_algorithms = CustomAlgorithm.objects.filter(user=request.user)
+    context = {
+        "tables": tables,
+        "custom_algorithms": custom_algorithms
+    }
 
     if request.method == 'POST':
         try:
             algorithm = request.POST.get('algorithm')
             table_id = int(request.POST.get('tabledata')) - 1
-            table = tables[table_id]  # Получаем объект Table
+            if not 0 <= table_id < len(tables):
+                raise IndexError("Недопустимый индекс таблицы")
+            table = tables[table_id]
             response_data = {
                 'algorithm': algorithm,
                 'iterations': 'N/A',
@@ -468,188 +462,104 @@ def calculations(request):
                 'table_data': []
             }
 
-            # Логика для каждого алгоритма
-            if algorithm == 'gauss':
-                gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss.gauss(tables, table_id)
+            if algorithm.startswith('custom_'):
+                custom_algorithm_id = int(algorithm.split('_')[1])
+                custom_algorithm = get_object_or_404(CustomAlgorithm, id=custom_algorithm_id, user=request.user)
+                safe_env = safe_globals.copy()
+                safe_env.update({
+                    'tables': tables,
+                    'table_ind': table_id,
+                    'func': func,  # Исправлено с func() на func
+                    'sum_of_deviations': sum_of_deviations
+                })
+                code = compile_restricted(custom_algorithm.code, '<string>', 'exec')
+                start_time = time.time()
+                exec(code, safe_env)
+                result = safe_env.get('result')
+                if not result or len(result) != 10:
+                    raise ValueError("Пользовательский алгоритм не вернул результат в ожидаемом формате (10 элементов)")
+                a, b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = result
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
                 ]
+                result_obj = CalculationResult.objects.create(
+                    user=request.user,
+                    title=table.title,
+                    algorithm=f"Пользовательский: {custom_algorithm.name}",
+                    param_a=a,
+                    param_b=b,
+                    table=table,
+                    iterations=iterations or 0,
+                    average_op=avg_op,
+                    exec_time=exec_time or 0,
+                    table_data=json.dumps(table_data)
+                )
+                response_data.update({
+                    'a': round(a, 3),
+                    'b': round(b, 3),
+                    'iterations': iterations or 'N/A',
+                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
+                    'table_data': table_data,
+                    'result_id': result_obj.id
+                })
+                context.update({'result': result_obj, 'table_data': table_data})
 
+            elif algorithm in ['gauss', 'gauss_step', 'gradient', 'gradient_step', 'otzhig']:
+                module_map = {
+                    'gauss': gauss.gauss,
+                    'gauss_step': gauss_step.gauss_step,
+                    'gradient': gradient.gradient,
+                    'gradient_step': gradient_step.gradient_step,
+                    'otzhig': otzhig.otzhig
+                }
+                a, b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = module_map[algorithm](tables, table_id)
+                table_data = [
+                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
+                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
+                ]
+                algorithm_name = {
+                    'gauss': 'Метод Гаусса',
+                    'gauss_step': 'Метод Гаусса с переменным шагом',
+                    'gradient': 'Метод градиентного спуска',
+                    'gradient_step': 'Метод градиентного спуска с переменным шагом',
+                    'otzhig': 'Метод симуляции отжига'
+                }[algorithm]
                 result = CalculationResult.objects.create(
                     user=request.user,
                     title=table.title,
-                    algorithm='Метод Гаусса',
-                    param_a=gauss_a,
-                    param_b=gauss_b,
-                    table=table,  # Передаем объект Table
+                    algorithm=algorithm_name,
+                    param_a=a,
+                    param_b=b,
+                    table=table,
                     iterations=iterations or 0,
                     average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
+                    exec_time=exec_time or 0,
+                    table_data=json.dumps(table_data)
                 )
-
                 response_data.update({
-                    'a': round(gauss_a, 3),
-                    'b': round(gauss_b, 3),
+                    'a': round(a, 3),
+                    'b': round(b, 3),
                     'iterations': iterations or 'N/A',
                     'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
                     'table_data': table_data,
                     'result_id': result.id
                 })
+                context.update({'result': result, 'table_data': table_data})
 
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
-            elif algorithm == 'gauss_step':
-                gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss_step.gauss_step(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод Гаусса с переменным шагом',
-                    param_a=gauss_step_a,
-                    param_b=gauss_step_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'c': round(gauss_step_a, 3),
-                    'd': round(gauss_step_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
-            elif algorithm == 'gradient':
-                gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient.gradient(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод градиентного спуска',
-                    param_a=gradient_a,
-                    param_b=gradient_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'e': round(gradient_a, 3),
-                    'f': round(gradient_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
-            elif algorithm == 'gradient_step':
-                gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient_step.gradient_step(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод градиентного спуска с переменным шагом',
-                    param_a=gradient_step_a,
-                    param_b=gradient_step_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'g': round(gradient_step_a, 3),
-                    'h': round(gradient_step_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
-            elif algorithm == 'otzhig':
-                otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = otzhig.otzhig(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод симуляции отжига',
-                    param_a=otzhig_a,
-                    param_b=otzhig_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'i': round(otzhig_a, 3),
-                    'j': round(otzhig_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
-            # Сохранение в сессии
-            request.session['param_a'] = response_data.get('a') or response_data.get('c') or response_data.get('e') or response_data.get('g') or response_data.get('i')
-            request.session['param_b'] = response_data.get('b') or response_data.get('d') or response_data.get('f') or response_data.get('h') or response_data.get('j')
+            request.session['param_a'] = response_data.get('a')
+            request.session['param_b'] = response_data.get('b')
             request.session['result_id'] = result.id
             request.session['table_choice'] = table_id
             request.session.modified = True
 
             return JsonResponse(response_data)
-        except Exception as e:
-            print(traceback.format_exc())  # Логирование ошибки
+        except (IndexError, ValueError, CustomAlgorithm.DoesNotExist) as e:
+            print(traceback.format_exc())
             return JsonResponse({'error': str(e)}, status=500)
+        except Exception as e:
+            print(traceback.format_exc())
+            return JsonResponse({'error': 'Неизвестная ошибка при выполнении расчёта'}, status=500)
 
     return render(request, 'calculations.html', context)
 
@@ -681,19 +591,11 @@ def login_user(request):
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
 @login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
-
-
-
-@login_required
-def databases(request):
-    tables = Table.objects.all()
-    context = {"tables": tables}
-    return render(request, "databases.html", context)
-
 
 @login_required
 def delete_table(request, pk):
@@ -702,6 +604,7 @@ def delete_table(request, pk):
         table.delete()
         return redirect('databases')
     return redirect('databases')
+
 @login_required
 def create_table(request):
     if request.method == 'POST':
@@ -716,5 +619,23 @@ def create_table(request):
             point = Point.objects.create(x_value=x_value, y_value=y_value)
             table.points.add(point)
         return HttpResponseRedirect('/databases/')
-
     return render(request, 'create_table.html')
+
+@login_required
+def upload_algorithm(request):
+    if request.method == 'POST':
+        form = CustomAlgorithmForm(request.POST)
+        if form.is_valid():
+            algorithm = form.save(commit=False)
+            algorithm.user = request.user
+            algorithm.save()
+            messages.success(request, 'Алгоритм успешно загружен!')
+            return redirect('calculations')
+    else:
+        form = CustomAlgorithmForm()
+    return render(request, 'upload_algorithm.html', {'form': form})
+
+@login_required
+def algorithm_list(request):
+        algorithms = CustomAlgorithm.objects.filter(user=request.user)
+        return render(request, 'algorithm_list.html', {'algorithms': algorithms})
