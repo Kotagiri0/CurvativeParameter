@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-{# {% load socialaccount %}  Убрали, так как используем social_django #}
 
 {% block title %}Вход{% endblock %}
 
@@ -36,8 +35,8 @@
       </button>
     </form>
 
-    <!-- Вход через Google - ИСПРАВЛЕННЫЙ ВАРИАНТ -->
-    <div style="margin-top: 15px;">
+    <!-- Вход через Google -->
+    <div class="cp-btn-container">
       <a href="{% url 'social:begin' 'google-oauth2' %}" class="cp-btn cp-btn-google">
         <i class="fab fa-google"></i> Войти через Google
       </a>
@@ -147,7 +146,15 @@
     background: rgba(50, 50, 50, 0.7);
   }
 
-  /* Кнопка */
+  /* Контейнер для кнопок */
+  .cp-btn-container {
+    margin-top: 15px;
+    width: 100%;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  /* Общие стили для кнопок */
   .cp-btn {
     padding: 12px 24px;
     border-radius: 8px;
@@ -159,13 +166,15 @@
     cursor: pointer;
     text-decoration: none;
     justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
   }
 
+  /* Основная кнопка */
   .cp-btn-primary {
     background: var(--accent-color);
     color: white;
     border: none;
-    width: 100%;
   }
 
   .cp-btn-primary:hover {
@@ -184,16 +193,23 @@
 
   /* Кнопка Google */
   .cp-btn-google {
-    background: #db4437;
+    background: #db4437; /* Цвет Google */
     color: white;
     border: none;
-    width: 100%;
   }
 
   .cp-btn-google:hover {
-    background: #c23321;
+    background: #c1351f; /* Темнее при наведении */
     transform: scale(1.05);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .cp-btn-google i {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-btn-google:hover i {
+    transform: scale(1.2);
   }
 
   /* Ссылка */
@@ -255,7 +271,7 @@
       padding: 8px 10px;
     }
 
-    .cp-btn-primary {
+    .cp-btn {
       padding: 10px 20px;
       font-size: 0.9rem;
     }
