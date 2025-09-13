@@ -50,7 +50,10 @@ LOGOUT_REDIRECT_URL = '/'     # куда после выхода
 # ===== Google OAuth2 =====
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('GOOGLE_CLIENT_ID')         # client_id
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')  # client_secret
-
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = os.getenv(
+    'GOOGLE_REDIRECT_URI',
+    'https://curvativeparameter-ocvw.onrender.com/auth/complete/google-oauth2/'
+)
 # ===== Middleware =====
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
