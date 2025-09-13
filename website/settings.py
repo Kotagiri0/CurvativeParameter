@@ -52,7 +52,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('GOOGLE_CLIENT_ID')         # client_i
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')  # client_secret
 SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = os.getenv(
     'GOOGLE_REDIRECT_URI',
-    'https://curvativeparameter-ocvw.onrender.com/accounts/google/login/callback/'
+    'https://curvativeparameter-ocvw.onrender.com/auth/complete/google-oauth2/'
 )
 # ===== Middleware =====
 MIDDLEWARE = [
