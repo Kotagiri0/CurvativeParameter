@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load socialaccount %}  {# нужно для provider_login_url #}
 
 {% block title %}Вход{% endblock %}
 
@@ -33,8 +34,16 @@
       <button type="submit" class="cp-btn cp-btn-primary">
         <i class="fas fa-sign-in-alt"></i> Войти
       </button>
-      <p class="cp-auth-link">Нет аккаунта? <a href="{% url 'register' %}" class="cp-link">Зарегистрироваться</a></p>
     </form>
+
+    <!-- Вход через Google -->
+    <div style="margin-top: 15px;">
+      <a href="{% provider_login_url 'google' %}" class="cp-btn cp-btn-google">
+        <i class="fab fa-google"></i> Войти через Google
+      </a>
+    </div>
+
+    <p class="cp-auth-link">Нет аккаунта? <a href="{% url 'register' %}" class="cp-link">Зарегистрироваться</a></p>
   </div>
 </section>
 
@@ -149,6 +158,7 @@
     transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
+    justify-content: center;
   }
 
   .cp-btn-primary {
@@ -170,6 +180,20 @@
 
   .cp-btn-primary:hover i {
     transform: scale(1.2);
+  }
+
+  /* Кнопка Google */
+  .cp-btn-google {
+    background: #db4437;
+    color: white;
+    border: none;
+    width: 100%;
+  }
+
+  .cp-btn-google:hover {
+    background: #c23321;
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   }
 
   /* Ссылка */
