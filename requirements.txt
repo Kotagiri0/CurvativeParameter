@@ -26,3 +26,6 @@ django-cloudinary-storage==0.3.0
 # Поддержка PostgreSQL
 # ========================
 #psycopg2-binary==2.9.9
+dnspython>=2.6.1
+social-auth-app-django
+python-decouple

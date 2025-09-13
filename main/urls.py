@@ -41,5 +41,6 @@ urlpatterns = [
     path('forum/create/', forum_create, name='forum_create'),
     path('forum/delete/<int:pk>/', forum_delete, name='forum_delete'),
     path('forum/edit/<int:pk>/', forum_edit, name='forum_edit'),
+path('auth/', include('social_django.urls', namespace='social')),
     path('forum/share/<int:result_id>/', share_calculation, name='share_calculation'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
