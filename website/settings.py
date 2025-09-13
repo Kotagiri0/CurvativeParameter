@@ -26,7 +26,41 @@ INSTALLED_APPS = [
     # Cloudinary
     'cloudinary',
     'cloudinary_storage',
+
+    # allauth
+    'django.contrib.sites',   # обязательно!
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
+
+SITE_ID = 1
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # стандартный бэкенд
+    'allauth.account.auth_backends.AuthenticationBackend',  # allauth
+]
+
+LOGIN_REDIRECT_URL = '/'      # после входа
+LOGOUT_REDIRECT_URL = '/'     # после выхода
+
+# ===== Google OAuth =====
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET'),
+            'key': ''
+        },
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    }
+}
 
 # ===== Middleware =====
 MIDDLEWARE = [
