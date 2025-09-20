@@ -431,32 +431,32 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     animation: slideInLeft 0.8s ease-out;
   }
 
-  /* Карточки */
+  /* КАРТОЧКИ - ИСПРАВЛЕННЫЕ СТИЛИ */
   .cp-theory-card,
   .cp-example-card,
   .cp-literature-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85); /* полупрозрачное «стекло» */
+    border-radius: 16px;
     padding: 30px;
     margin-bottom: 25px;
-    box-shadow: 0 6px 15px var(--shadow-color);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 6px 20px var(--shadow-color);
+    backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
   }
 
   [data-theme="dark"] .cp-theory-card,
   [data-theme="dark"] .cp-example-card,
   [data-theme="dark"] .cp-literature-card {
-    background: rgba(30, 30, 30, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .cp-theory-card:hover,
   .cp-example-card:hover,
   .cp-literature-card:hover {
-    transform: translateY(-5px) rotateX(5deg);
-    box-shadow: 0 12px 25px var(--shadow-color);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(65, 151, 222, 0.4);
   }
 
   .cp-theory-card p,
@@ -512,6 +512,7 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     transform: rotateY(180deg);
   }
 
+  /* FLIP-КАРТОЧКИ - ИСПРАВЛЕННЫЕ СТИЛИ */
   .cp-flip-card-front,
   .cp-flip-card-back {
     position: absolute;
@@ -523,6 +524,8 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 6px 15px var(--shadow-color);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -537,12 +540,38 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
+  .cp-flip-card-front * {
+    color: var(--text-color) !important;
+  }
+
+  /* ОБРАТНАЯ СТОРОНА - ИСПРАВЛЕНО */
   .cp-flip-card-back {
     transform: rotateY(180deg);
-    color: var(--text-color);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    color: #2c3e50 !important;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="dark"] .cp-flip-card-back {
+    background: rgba(45, 45, 45, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ecf0f1 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  .cp-flip-card-back p {
+    margin: 0;
+    padding: 10px;
     font-size: 0.95rem;
     line-height: 1.5;
-    justify-content: center;
+    color: inherit !important;
+  }
+
+  .cp-method-card:hover .cp-flip-card-front,
+  .cp-method-card:hover .cp-flip-card-back {
+    box-shadow: 0 12px 30px rgba(65, 151, 222, 0.5);
   }
 
   .cp-method-icon {
@@ -604,7 +633,7 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
   .cp-graph-container {
     margin-top: 30px;
     height: 350px;
-   otel: relative;
+    position: relative;
     background: transparent;
   }
 
@@ -669,7 +698,7 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
 
   .cp-btn-primary:hover {
     background: #2980b9;
-    transform confirmed: scale(1.05);
+    transform: scale(1.05);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   }
 
