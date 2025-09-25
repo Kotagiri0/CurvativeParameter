@@ -810,10 +810,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Управление предпросмотром аватара
     const fileInput = document.querySelector('.cp-file-input');
-    const avatarImage = document.querySelector('#avatarImage');
-    let originalAvatarSrc = avatarImage ? avatarImage.src || avatarImage.textContent : '';
+    let avatarImage = document.querySelector('#avatarImage');
+    let originalAvatarContent;
+
+    if (avatarImage) {
+        if (avatarImage.tagName === 'IMG') {
+            originalAvatarContent = { type: 'img', value: avatarImage.src };
+        } else {
+            originalAvatarContent = { type: 'placeholder', value: avatarImage.textContent };
+        }
+    }
 
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length > 0) {
@@ -828,25 +835,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     newImg.src = e.target.result;
                     newImg.alt = 'Текущий аватар';
                     avatarImage.parentNode.replaceChild(newImg, avatarImage);
+                    avatarImage = newImg;
                 }
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Восстановление оригинального аватара при закрытии модального окна
     window.closeEditModal = function() {
         const modal = document.getElementById('editProfileModal');
         modal.style.display = 'none';
-        if (avatarImage) {
-            if (originalAvatarSrc && originalAvatarSrc.startsWith('data:image')) {
-                avatarImage.src = originalAvatarSrc;
-            } else if (originalAvatarSrc) {
+
+        if (avatarImage && originalAvatarContent) {
+            if (originalAvatarContent.type === 'img') {
+                avatarImage.src = originalAvatarContent.value;
+            } else if (originalAvatarContent.type === 'placeholder') {
                 const placeholder = document.createElement('div');
                 placeholder.id = 'avatarImage';
                 placeholder.className = 'cp-avatar-placeholder';
-                placeholder.textContent = originalAvatarSrc;
+                placeholder.textContent = originalAvatarContent.value;
                 avatarImage.parentNode.replaceChild(placeholder, avatarImage);
+                avatarImage = placeholder;
             }
         }
     };
