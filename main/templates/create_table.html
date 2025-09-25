@@ -20,6 +20,7 @@ temperature"></textarea>
             Первая строка — название таблицы (<code>title</code>)<br />
             Вторая строка — раствор (<code>solution</code>)<br />
             Последняя строка — температура в Кельвинах (<code>temperature</code>)<br />
+            Пустые строки не допускаются<br />
             Пример точки: <code>0.0697;407</code><br />
             Пример температуры: <code>278.15</code>
         </div>
@@ -274,6 +275,13 @@ temperature"></textarea>
     function validateData(lines) {
         const errors = [];
 
+        // Проверка наличия пустых строк внутри данных
+        lines.forEach((line, index) => {
+            if (!line.trim()) {
+                errors.push(`Пустая строка в данных (строка ${index + 1}) не допускается.`);
+            }
+        });
+
         // Проверка наличия данных
         if (!lines[0] || lines.length < 3) {
             errors.push("Недостаточно данных: требуется название, раствор, хотя бы одна точка и температура.");
@@ -283,7 +291,7 @@ temperature"></textarea>
         const title = lines[0].trim();
         const solution = lines[1].trim();
         const temperature = lines[lines.length - 1].trim();
-        const points = lines.slice(2, -1).map(p => p.trim());
+        const points = lines.slice(2, -1).map(p => p.trim()).filter(p => p);
 
         // Проверка названия
         if (!title) {
@@ -325,7 +333,7 @@ temperature"></textarea>
     }
 
     function updatePreview() {
-        const lines = textarea.value.trim().split('\n').filter(line => line.trim());
+        const lines = textarea.value.split('\n');
         const validation = validateData(lines);
 
         if (!textarea.value.trim()) {
