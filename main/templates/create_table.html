@@ -11,7 +11,7 @@ solution
 x1;y1
 x2;y2
 ...
-temperature(K)"></textarea>
+temperature"></textarea>
 
         <div class="note">
             <strong>Памятка:</strong><br />
@@ -19,10 +19,12 @@ temperature(K)"></textarea>
             Данные разделяются символом <code>;</code><br />
             Первая строка — название таблицы (<code>title</code>)<br />
             Вторая строка — раствор (<code>solution</code>)<br />
-            Последняя строка — температура в Кельвинах (<code>temperature</code>)
+            Последняя строка — температура в Кельвинах (<code>temperature</code>)<br />
+            Пример точки: <code>0.0697;407</code><br />
+            Пример температуры: <code>278.15</code>
         </div>
 
-        <button type="submit" class="but">
+        <button type="submit" class="but" id="submit-btn" disabled>
             <i class="fas fa-plus icon"></i> Создать таблицу
         </button>
     </form>
@@ -37,7 +39,7 @@ temperature(K)"></textarea>
 </div>
 
 <style>
-    /* Переменные унаследованы из base.html */
+    /* Стили остаются без изменений */
     .centered-content {
         max-width: 1000px;
         margin: 50px auto;
@@ -143,7 +145,14 @@ temperature(K)"></textarea>
         transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .but:hover {
+    .but:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .but:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
@@ -154,7 +163,7 @@ temperature(K)"></textarea>
         transition: transform 0.3s ease;
     }
 
-    .but:hover .icon {
+    .but:hover:not(:disabled) .icon {
         transform: scale(1.2);
     }
 
@@ -229,6 +238,11 @@ temperature(K)"></textarea>
         padding-left: 20px;
     }
 
+    .error {
+        color: #e74c3c;
+        font-weight: bold;
+    }
+
     @media (max-width: 768px) {
         .centered-content {
             margin: 20px;
@@ -255,26 +269,87 @@ temperature(K)"></textarea>
     const previewWrapper = document.getElementById('preview-wrapper');
     const toggleBtn = document.getElementById('toggle-preview');
     const arrow = document.getElementById('arrow');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function validateData(lines) {
+        const errors = [];
+
+        // Проверка наличия данных
+        if (!lines[0] || lines.length < 3) {
+            errors.push("Недостаточно данных: требуется название, раствор, хотя бы одна точка и температура.");
+            return { isValid: false, errors };
+        }
+
+        const title = lines[0].trim();
+        const solution = lines[1].trim();
+        const temperature = lines[lines.length - 1].trim();
+        const points = lines.slice(2, -1).map(p => p.trim());
+
+        // Проверка названия
+        if (!title) {
+            errors.push("Название таблицы не указано.");
+        }
+
+        // Проверка раствора
+        if (!solution) {
+            errors.push("Раствор не указан.");
+        }
+
+        // Проверка точек
+        if (points.length === 0) {
+            errors.push("Не указана ни одна точка данных.");
+        } else {
+            points.forEach((point, index) => {
+                const parts = point.split(';');
+                if (parts.length !== 2) {
+                    errors.push(`Неверный формат точки в строке ${index + 3}: ожидается "x;y".`);
+                } else {
+                    const [x, y] = parts;
+                    if (!/^-?\d*\.?\d+$/.test(x) || !/^-?\d*\.?\d+$/.test(y)) {
+                        errors.push(`Неверный формат чисел в точке "${point}" (строка ${index + 3}): используйте вещественные числа через точку.`);
+                    }
+                }
+            });
+        }
+
+        // Проверка температуры
+        if (!/^\d+(\.\d+)?$/.test(temperature)) {
+            errors.push("Неверный формат температуры в последней строке: ожидается число (например, 300 или 278.15).");
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors,
+            data: { title, solution, points, temperature }
+        };
+    }
 
     function updatePreview() {
-        const lines = textarea.value.trim().split('\n');
-        if (!lines[0]) {
+        const lines = textarea.value.trim().split('\n').filter(line => line.trim());
+        const validation = validateData(lines);
+
+        if (!textarea.value.trim()) {
             previewDiv.innerHTML = "<em>Введите данные для предпросмотра</em>";
-            return;
-        }
-        if (lines.length < 3) {
-            previewDiv.innerHTML = "<em>Недостаточно данных для предпросмотра</em>";
+            submitBtn.disabled = true;
             return;
         }
 
-        const title = lines[0];
-        const solution = lines[1];
-        const temperature = lines[lines.length - 1];
-        const points = lines.slice(2, -1);
+        if (!validation.isValid) {
+            let html = '<div class="error">Ошибки в данных:<ul>';
+            validation.errors.forEach(error => {
+                html += `<li>${error}</li>`;
+            });
+            html += '</ul></div>';
+            previewDiv.innerHTML = html;
+            submitBtn.disabled = true;
+            return;
+        }
 
+        // Если данные валидны, отображаем предпросмотр
+        const { title, solution, points, temperature } = validation.data;
         let html = `<h3>${title}</h3>`;
         html += `<p><strong>Раствор:</strong> ${solution}</p>`;
-        html += `<p><strong>Температура:</strong> ${temperature}</p>`;
+        html += `<p><strong>Температура:</strong> ${temperature} K</p>`;
         html += `<h4>Точки:</h4><ul>`;
         points.forEach(p => {
             html += `<li>${p}</li>`;
@@ -282,6 +357,7 @@ temperature(K)"></textarea>
         html += `</ul>`;
 
         previewDiv.innerHTML = html;
+        submitBtn.disabled = false;
     }
 
     toggleBtn.addEventListener('click', () => {
@@ -293,9 +369,7 @@ temperature(K)"></textarea>
     });
 
     textarea.addEventListener('input', () => {
-        if (previewWrapper.classList.contains('visible')) {
-            updatePreview();
-        }
+        updatePreview();
     });
 
     window.addEventListener('DOMContentLoaded', updatePreview);
