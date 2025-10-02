@@ -73,9 +73,12 @@
         </div>
 
         <!-- Кнопка "Поделиться" -->
-        <a href="{% url 'share_calculation' result_id %}" class="cp-btn cp-btn-primary" style="margin-top: 15px;">
-          <i class="fas fa-share"></i> Поделиться на форуме
-        </a>
+       {% if result_id %}
+  <a href="{% url 'share_calculation' result_id %}" class="cp-btn cp-btn-primary" style="margin-top: 15px;">
+    <i class="fas fa-share"></i> Поделиться на форуме
+  </a>
+{% endif %}
+
 
         <!-- Информация о графике (аккордеон) -->
         <button class="cp-info-toggle" onclick="toggleInfo(this)">
