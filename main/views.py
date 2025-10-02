@@ -252,58 +252,53 @@ def share_calculation(request, result_id):
 
 @login_required
 def graph_view(request):
-    # Get parameters from session
+    # Достаём из сессии сохранённые данные
     result_id = request.session.get('result_id')
     table_id = request.session.get('table_id')
     param_a = request.session.get('param_a')
     param_b = request.session.get('param_b')
 
-    # Set initial form data
+    # Начальные данные для формы
     initial_data = {}
     if result_id:
         try:
             result = CalculationResult.objects.get(id=result_id)
             initial_data = {
-                'table_choice': str(table_id) if table_id is not None else None,
+                'table_choice': str(result.table.id),
                 'parameter_a': round(result.param_a, 3),
                 'parameter_b': round(result.param_b, 3),
             }
         except CalculationResult.DoesNotExist:
-            if table_id is not None:
-                initial_data['table_choice'] = str(table_id)
-            if param_a is not None:
-                initial_data['parameter_a'] = round(param_a, 3)
-            if param_b is not None:
-                initial_data['parameter_b'] = round(param_b, 3)
+            result = None
     else:
-        if table_id is not None:
+        if table_id:
             initial_data['table_choice'] = str(table_id)
         if param_a is not None:
             initial_data['parameter_a'] = round(param_a, 3)
         if param_b is not None:
             initial_data['parameter_b'] = round(param_b, 3)
+        result = None  # график без расчета
 
     form = GraphForm(request.POST or None, initial=initial_data)
     context = {'form': form}
 
     if request.method == 'POST' and form.is_valid():
-        # Get form data
+        # Получаем данные формы
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
-        # Save parameters and table choice to session
+        # Сохраняем параметры в сессию (для повторного использования)
         request.session['table_id'] = table_id
         request.session['param_a'] = parameter_a
         request.session['param_b'] = parameter_b
         request.session.modified = True
 
-        # Create plot data
+        # Готовим точки для построения
+        new_x = np.linspace(0, 1, 1000)
         new_y = []
-        new_x = np.linspace(0, 1, 10000)
-        xx = []
-        yy = []
+        xx, yy = [], []
         for point in table.points.all():
             xx.append(point.x_value)
             yy.append(point.y_value)
@@ -314,23 +309,23 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
-        # Build the graph
+        # Рисуем график
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(new_x, new_y, color='red', marker='o', markersize=1)
-        ax.scatter(xx, yy, color='b')
-        plt.title(table.title[:-1])
+        ax.plot(new_x, new_y, color='red', markersize=1)
+        ax.scatter(xx, yy, color='blue')
+        ax.set_title(table.title)
         ax.set_xlabel(r'$x_2$')
         ax.set_ylabel(r'$G^{E}$')
         ax.grid(True)
 
-        # Save graph to memory for display
         buffer = BytesIO()
         plt.savefig(buffer, format='png', bbox_inches='tight')
         buffer.seek(0)
-        image_png = buffer.getvalue()
-        graphic = base64.b64encode(image_png).decode('utf-8')
+        graphic = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        buffer.close()
+        plt.close(fig)
 
-        # Формируем table_data (для отображения, но не для сохранения)
+        # Подготавливаем данные таблицы (чтобы показывать ошибки)
         table_data = []
         for x, y_exp in zip(xx, yy):
             x1 = 1 - x
@@ -346,28 +341,27 @@ def graph_view(request):
                 "delta": delta
             })
 
-        # Update session with the new result_id
-        request.session['result_id'] = result.id
-
-        buffer.close()
-        plt.close(fig)
+        # Если график связан с CalculationResult → сохраняем ID
+        if result:
+            request.session['result_id'] = result.id
+            context.update({'result_id': result.id, 'graphic_result': result})
+        else:
+            # График без расчётов → result_id не нужен
+            request.session['result_id'] = None
 
         context.update({
             'graphic': graphic,
             'a': round(parameter_a, 3),
             'b': round(parameter_b, 3),
-            'result_id': result.id,
-            'graphic_result': result,  # Передаем объект результата для отображения в graphs.html
+            'table_data': table_data
         })
 
-    # Add parameters to context for display
+    # Добавляем параметры в контекст для отображения
     if param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
-    print(f"Контекст: {context}")
-    print(f"Initial data: {initial_data}")
-    print(f"Table ID from session: {table_id}")
     return render(request, 'graphs.html', context)
+
 @login_required
 def databases(request):
     tables = Table.objects.all()
