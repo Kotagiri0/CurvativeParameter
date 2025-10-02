@@ -77,13 +77,8 @@
   <a href="{% url 'share_calculation' result_id %}" class="cp-btn cp-btn-primary" style="margin-top: 15px;">
     <i class="fas fa-share"></i> Поделиться на форуме
   </a>
-{% else %}
-  <!-- Не активная кнопка, если результат не сохранён -->
-  <button type="button" class="cp-btn" style="margin-top: 15px; opacity: 0.6;" disabled
-          title="Сохраните результат (через расчёт или ручное сохранение), чтобы поделиться">
-    <i class="fas fa-share"></i> Поделиться на форуме
-  </button>
 {% endif %}
+
 
         <!-- Информация о графике (аккордеон) -->
         <button class="cp-info-toggle" onclick="toggleInfo(this)">
