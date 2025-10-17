@@ -22,61 +22,36 @@
   </div>
 
   <div class="cp-post-content">
-    {% if post.calculation_result or post.calculation_result.get_table_data %}
-      <!-- Для постов с расчётами: двухколоночная раскладка -->
+    {% if post.calculation_result %}
+      <!-- Пост с расчетом -->
       <div class="cp-content-row">
-        <!-- Секция Результат расчета -->
-        {% if post.calculation_result %}
-          <div class="cp-result-card">
-            <h3>Результат расчета</h3>
-            <ul class="cp-result-list">
-              <li>
-                <span class="cp-label">Параметр A<sub>12</sub></span>
-                <span class="cp-value">{{ post.calculation_result.param_a|floatformat:3 }}</span>
-              </li>
-              <li>
-                <span class="cp-label">Параметр A<sub>21</sub></span>
-                <span class="cp-value">{{ post.calculation_result.param_b|floatformat:3 }}</span>
-              </li>
-              <li>
-                <span class="cp-label">Итераций</span>
-                <span class="cp-value">{{ post.calculation_result.iterations|default:"N/A" }}</span>
-              </li>
-              <li>
-                <span class="cp-label">Время выполнения</span>
-                <span class="cp-value">{% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</span>
-              </li>
-              <li>
-                <span class="cp-label">Алгоритм</span>
-                <span class="cp-value">{{ post.calculation_result.algorithm|default:"Не указан" }}</span>
-              </li>
-              <li>
-                <span class="cp-label">Средняя погрешность</span>
-                <span class="cp-value">{% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</span>
-              </li>
-            </ul>
-          </div>
-        {% endif %}
+        <div class="cp-result-card">
+          <h3>Результат расчета</h3>
+          <ul class="cp-result-list">
+            <li><span class="cp-label">Параметр A<sub>12</sub></span><span class="cp-value">{{ post.calculation_result.param_a|floatformat:3 }}</span></li>
+            <li><span class="cp-label">Параметр A<sub>21</sub></span><span class="cp-value">{{ post.calculation_result.param_b|floatformat:3 }}</span></li>
+            <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.calculation_result.iterations|default:"N/A" }}</span></li>
+            <li><span class="cp-label">Время выполнения</span><span class="cp-value">{% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</span></li>
+            <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.calculation_result.algorithm|default:"Не указан" }}</span></li>
+            <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</span></li>
+          </ul>
+        </div>
 
-        <!-- Секция Описание -->
-        {% if post.content|extract_comment or post.image %}
-          <div class="cp-description-card">
-            <h3>Описание</h3>
-            {% if post.content|extract_comment %}
-              <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
-            {% else %}
-              <p class="cp-comment-placeholder">Нет описания</p>
-            {% endif %}
-            {% if post.image %}
-              <div class="cp-post-image-container">
-                <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
+        <div class="cp-description-card">
+          <h3>Описание</h3>
+          {% if post.content|extract_comment %}
+            <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+          {% else %}
+            <p class="cp-comment-placeholder">Нет описания</p>
+          {% endif %}
+          {% if post.image %}
+            <div class="cp-post-image-container">
+              <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+            </div>
+          {% endif %}
+        </div>
       </div>
 
-      <!-- Секция Данные таблицы -->
       {% if post.calculation_result.get_table_data %}
         <div class="cp-table-container">
           <div class="cp-table-header">
@@ -115,25 +90,47 @@
         </div>
       {% endif %}
     {% else %}
-      <!-- Для обычных постов: только описание, если есть -->
-      {% if post.content|extract_comment or post.image %}
-        <div class="cp-description-card">
-          <h3>Описание</h3>
-          {% if post.content|extract_comment %}
-            <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
-          {% else %}
-            <p class="cp-comment-placeholder">Нет описания</p>
-          {% endif %}
-          {% if post.image %}
-            <div class="cp-post-image-container">
-              <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
-            </div>
-          {% endif %}
-        </div>
-      {% endif %}
+      <!-- Обычный пост без расчета -->
+      <div class="cp-description-card">
+        <h3>Описание</h3>
+        {% if post.content|extract_comment %}
+          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+        {% else %}
+          <p class="cp-comment-placeholder">Нет описания</p>
+        {% endif %}
+        {% if post.image %}
+          <div class="cp-post-image-container">
+            <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+          </div>
+        {% endif %}
+      </div>
     {% endif %}
+
+    <!-- Комментарии -->
+    <div class="cp-comments-section">
+      <h3>Комментарии ({{ comments.count }})</h3>
+      {% for comment in comments %}
+        <div class="cp-comment-item">
+          <p><strong>{{ comment.author.username }}</strong> <small>{{ comment.created_at|date:"d.m.Y H:i" }}</small></p>
+          <p>{{ comment.content|linebreaks }}</p>
+        </div>
+      {% empty %}
+        <p>Комментариев пока нет.</p>
+      {% endfor %}
+
+      {% if user.is_authenticated %}
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Отправить</button>
+        </form>
+      {% else %}
+        <p>Войдите, чтобы оставить комментарий.</p>
+      {% endif %}
+    </div>
   </div>
 </section>
+
 
 <style>
   :root {
