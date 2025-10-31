@@ -24,15 +24,27 @@ class CalculationResult(models.Model):
     title = models.CharField(max_length=200, default="Без названия", verbose_name="Название расчета")
     param_a = models.FloatField()
     param_b = models.FloatField()
-    table = models.ForeignKey('Table', on_delete=models.CASCADE, null=True, blank=True)  # Временно null=True
+
+    # не каскадное удаление!
+    table = models.ForeignKey(
+        'Table',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="results"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     iterations = models.IntegerField(null=True, blank=True, verbose_name="Количество итераций")
     exec_time = models.FloatField(null=True, blank=True, verbose_name="Время выполнения (сек)")
     algorithm = models.CharField(max_length=100, null=True, blank=True, verbose_name="Алгоритм")
     average_op = models.FloatField(null=True, blank=True, verbose_name="Средняя относительная погрешность (%)")
+
+    # сюда сохраняется копия данных таблицы
     table_data = models.TextField(null=True, blank=True, verbose_name="Данные таблицы")
 
     def get_table_data(self):
+        """Возвращает JSON-данные таблицы (snapshot)."""
         if self.table_data:
             try:
                 return json.loads(self.table_data)
@@ -43,9 +55,6 @@ class CalculationResult(models.Model):
     def __str__(self):
         return f"Calculation #{self.id} by {self.user.username}"
 
-    class Meta:
-        verbose_name = "Результат расчета"
-        verbose_name_plural = "Результаты расчетов"
 
 
 from cloudinary_storage.storage import MediaCloudinaryStorage
@@ -84,3 +93,26 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+class Comment(models.Model):
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name="Пост"
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name="Автор"
+    )
+    content = models.TextField("Комментарий", max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Комментарий от {self.author.username} к '{self.post.title}'"
