@@ -26,3 +26,4 @@ django-cloudinary-storage==0.3.0
 # Поддержка PostgreSQL
 # ========================
 psycopg2-binary==2.9.9
+django-prometheus
