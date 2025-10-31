@@ -18,12 +18,19 @@
     <div class="cp-meta">
       <p><strong>Автор:</strong> {{ post.author.username }}</p>
       <p><strong>Дата:</strong> {{ post.created_at|date:"d.m.Y H:i" }}</p>
+
+      <!-- 👇 Пометка об источнике -->
+      {% if post.source == 'forum' %}
+        <p><span class="cp-badge cp-badge-forum">📝 Создан на форуме</span></p>
+      {% else %}
+        <p><span class="cp-badge cp-badge-calc">📊 Создан из расчёта</span></p>
+      {% endif %}
     </div>
   </div>
 
   <div class="cp-post-content">
     {% if post.calculation_result %}
-      <!-- Пост с расчетом -->
+      <!-- Пост с расчетом (автоматически созданный) -->
       <div class="cp-content-row">
         <div class="cp-result-card">
           <h3>Результат расчета</h3>
@@ -89,12 +96,46 @@
           </div>
         </div>
       {% endif %}
+
     {% else %}
-      <!-- Обычный пост без расчета -->
+      <!-- Обычный пост (созданный на форуме) -->
+
+      <!-- 👇 Технические параметры (если заполнены) -->
+      {% if post.algorithm or post.a12 or post.a21 or post.iterations or post.exec_time or post.average_error %}
+      <div class="cp-result-card" style="margin-bottom: 1.5rem;">
+        <h3>Параметры расчёта</h3>
+        <ul class="cp-result-list">
+          {% if post.algorithm %}
+          <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.algorithm }}</span></li>
+          {% endif %}
+
+          {% if post.a12 %}
+          <li><span class="cp-label">A<sub>12</sub></span><span class="cp-value">{{ post.a12 }}</span></li>
+          {% endif %}
+
+          {% if post.a21 %}
+          <li><span class="cp-label">A<sub>21</sub></span><span class="cp-value">{{ post.a21 }}</span></li>
+          {% endif %}
+
+          {% if post.iterations %}
+          <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.iterations }}</span></li>
+          {% endif %}
+
+          {% if post.exec_time %}
+          <li><span class="cp-label">Время выполнения</span><span class="cp-value">{{ post.exec_time }}</span></li>
+          {% endif %}
+
+          {% if post.average_error %}
+          <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{{ post.average_error }}</span></li>
+          {% endif %}
+        </ul>
+      </div>
+      {% endif %}
+
       <div class="cp-description-card">
         <h3>Описание</h3>
-        {% if post.content|extract_comment %}
-          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+        {% if post.content %}
+          <p class="cp-comment">{{ post.content|linebreaks }}</p>
         {% else %}
           <p class="cp-comment-placeholder">Нет описания</p>
         {% endif %}
@@ -224,6 +265,7 @@
     font-size: 0.9rem;
     color: var(--text-color-light);
     opacity: 0.9;
+    flex-wrap: wrap;
   }
 
   [data-theme="dark"] .cp-meta {
@@ -238,6 +280,32 @@
   .cp-meta strong {
     font-weight: 700;
     margin-right: 0.25rem;
+  }
+
+  /* 👇 Стили для badge источника */
+  .cp-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .cp-badge-forum {
+    background: #8b5cf6;
+  }
+
+  .cp-badge-calc {
+    background: #10b981;
+  }
+
+  [data-theme="dark"] .cp-badge-forum {
+    background: #a78bfa;
+  }
+
+  [data-theme="dark"] .cp-badge-calc {
+    background: #34d399;
   }
 
   .cp-post-content {

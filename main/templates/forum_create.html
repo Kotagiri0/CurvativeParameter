@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if result %}Поделиться результатом{% else %}Создать пост{% endif %}{% endblock %}
+{% block title %}
+  {% if result %}Поделиться результатом{% else %}Создать пост{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="cp-section">
@@ -28,21 +30,16 @@
           </div>
         {% endif %}
 
-        <!-- Отладка: проверить, рендерится ли form.content -->
-        {% if not form.content %}
-          <div class="cp-form-errors">
-            <p class="cp-error">Ошибка: Поле 'content' не отображается. Проверьте форму.</p>
-          </div>
-        {% endif %}
-
         <div class="cp-form-group">
           <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
           {{ form.title }}
         </div>
+
         <div class="cp-form-group">
           <label for="{{ form.content.id_for_label }}">{{ form.content.label }}:</label>
           {{ form.content }}
         </div>
+
         <div class="cp-form-group cp-file-upload">
           <label for="{{ form.image.id_for_label }}">{{ form.image.label }}:</label>
           <div class="cp-file-input-wrapper">
@@ -53,11 +50,67 @@
             <img id="image-preview-{{ form.image.id_for_label }}" alt="Предпросмотр изображения" style="display: none;" />
           </div>
         </div>
+
         {% if result %}
-          <!-- Скрытое поле для передачи CalculationResult -->
           <input type="hidden" name="calculation_result" value="{{ result.id }}" />
         {% endif %}
+
+        <!-- 🔧 Технические параметры -->
+        <hr style="margin: 30px 0; border-color: var(--border-color);" />
+        <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--accent-color);">
+          🔧 Технические параметры (опционально)
+        </h3>
+
+        <div class="cp-form-group">
+          <label for="{{ form.algorithm.id_for_label }}">{{ form.algorithm.label }}:</label>
+          {{ form.algorithm }}
+        </div>
+
+        <div class="cp-form-row">
+          <div class="cp-form-group">
+            <label for="{{ form.a12.id_for_label }}">{{ form.a12.label }}:</label>
+            {{ form.a12 }}
+          </div>
+
+          <div class="cp-form-group">
+            <label for="{{ form.a21.id_for_label }}">{{ form.a21.label }}:</label>
+            {{ form.a21 }}
+          </div>
+        </div>
+
+        <div class="cp-form-row">
+          <div class="cp-form-group">
+            <label for="{{ form.iterations.id_for_label }}">{{ form.iterations.label }}:</label>
+            {{ form.iterations }}
+          </div>
+
+          <div class="cp-form-group">
+            <label for="{{ form.exec_time.id_for_label }}">{{ form.exec_time.label }}:</label>
+            {{ form.exec_time }}
+          </div>
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.average_error.id_for_label }}">{{ form.average_error.label }}:</label>
+          {{ form.average_error }}
+        </div>
+
+        <!-- 🏷️ Пометка об источнике -->
+        {% if not result %}
+        <div class="cp-source-badge">
+          <span class="cp-badge-info">
+            📝 Этот пост будет отмечен как <strong>"Создан на форуме"</strong>
+          </span>
+        </div>
+        {% else %}
+        <div class="cp-source-badge">
+          <span class="cp-badge-success">
+            📊 Этот пост будет отмечен как <strong>"Создан из расчёта"</strong>
+          </span>
+        </div>
+        {% endif %}
       </div>
+
       <div class="cp-btn-group" style="display: flex; gap: 10px; justify-content: center;">
         <a href="{% url 'forum_list' %}" class="cp-btn cp-btn-secondary">
           <i class="fas fa-times"></i> Отмена
@@ -69,6 +122,33 @@
     </form>
   </div>
 </section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const fileInputs = document.querySelectorAll('.cp-file-input-wrapper input[type="file"]');
+    fileInputs.forEach(input => {
+      input.addEventListener('change', function() {
+        const placeholder = this.parentElement.querySelector('.cp-file-placeholder');
+        const preview = this.parentElement.parentElement.querySelector('.cp-image-preview img');
+
+        placeholder.textContent = this.files.length > 0 ? this.files[0].name : 'Выберите изображение...';
+
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+          };
+          reader.readAsDataURL(this.files[0]);
+        } else {
+          preview.src = '';
+          preview.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+
 
 <style>
   .cp-section {
@@ -146,6 +226,17 @@
     margin-bottom: 20px;
   }
 
+  .cp-form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .cp-form-row .cp-form-group {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
   .cp-form-group label {
     display: block;
     font-size: 1rem;
@@ -156,6 +247,7 @@
   }
 
   .cp-form-group input[type="text"],
+  .cp-form-group input[type="number"],
   .cp-form-group textarea {
     width: 100%;
     padding: 10px 12px;
@@ -169,6 +261,7 @@
   }
 
   .cp-form-group input[type="text"]:focus,
+  .cp-form-group input[type="number"]:focus,
   .cp-form-group textarea:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.9);
@@ -176,6 +269,7 @@
   }
 
   [data-theme="dark"] .cp-form-group input[type="text"]:focus,
+  [data-theme="dark"] .cp-form-group input[type="number"]:focus,
   [data-theme="dark"] .cp-form-group textarea:focus {
     background: rgba(50, 50, 50, 0.9);
   }
@@ -247,6 +341,47 @@
     transform: scale(1.05);
   }
 
+  /* 👇 Стили для пометки источника */
+  .cp-source-badge {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .cp-badge-info {
+    display: inline-block;
+    padding: 10px 20px;
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid #8b5cf6;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  [data-theme="dark"] .cp-badge-info {
+    background: rgba(167, 139, 250, 0.2);
+    color: #a78bfa;
+    border-color: #a78bfa;
+  }
+
+  .cp-badge-success {
+    display: inline-block;
+    padding: 10px 20px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid #10b981;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  [data-theme="dark"] .cp-badge-success {
+    background: rgba(52, 211, 153, 0.2);
+    color: #34d399;
+    border-color: #34d399;
+  }
+
   .cp-btn {
     padding: 10px 20px;
     font-size: 1rem;
@@ -311,11 +446,21 @@
       font-size: 1.5rem;
     }
 
+    .cp-form-row {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .cp-form-row .cp-form-group {
+      margin-bottom: 20px;
+    }
+
     .cp-form-group label {
       font-size: 0.9rem;
     }
 
     .cp-form-group input[type="text"],
+    .cp-form-group input[type="number"],
     .cp-form-group textarea {
       font-size: 0.9rem;
       padding: 8px 10px;
@@ -349,6 +494,7 @@
     }
 
     .cp-form-group input[type="text"],
+    .cp-form-group input[type="number"],
     .cp-form-group textarea {
       font-size: 0.85rem;
       padding: 6px 8px;
@@ -372,30 +518,4 @@
     }
   }
 </style>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const fileInputs = document.querySelectorAll('.cp-file-input-wrapper input[type="file"]');
-    fileInputs.forEach(input => {
-      input.addEventListener('change', function() {
-        const placeholder = this.parentElement.querySelector('.cp-file-placeholder');
-        const preview = this.parentElement.parentElement.querySelector('.cp-image-preview img');
-
-        placeholder.textContent = this.files.length > 0 ? this.files[0].name : 'Выберите изображение...';
-
-        if (this.files && this.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-          };
-          reader.readAsDataURL(this.files[0]);
-        } else {
-          preview.src = '';
-          preview.style.display = 'none';
-        }
-      });
-    });
-  });
-</script>
 {% endblock %}

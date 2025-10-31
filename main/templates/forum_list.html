@@ -61,15 +61,16 @@
             <p><strong>Время выполнения:</strong> {% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</p>
             <p><strong>Средняя погрешность:</strong> {% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</p>
           </div>
-        {% elif post.content %}
-          <div class="cp-forum-preview">
-            <p><strong>Алгоритм:</strong> {{ post.content|get_algorithm }}</p>
-            <p><strong>A<sub>12</sub>:</strong> {{ post.content|get_param_a }}</p>
-            <p><strong>A<sub>21</sub>:</strong> {{ post.content|get_param_b }}</p>
-            <p><strong>Итераций:</strong> {{ post.content|get_iterations }}</p>
-            <p><strong>Время выполнения:</strong> {{ post.content|get_execution_time }}</p>
-            <p><strong>Средняя погрешность:</strong> {{ post.content|get_average_error }}</p>
-          </div>
+       {% elif post.source == "forum" %}
+  <div class="cp-forum-preview">
+    <p><strong>Алгоритм:</strong> {{ post.algorithm|default:"Не указан" }}</p>
+    <p><strong>A<sub>12</sub>:</strong> {{ post.a12|default:"N/A" }}</p>
+    <p><strong>A<sub>21</sub>:</strong> {{ post.a21|default:"N/A" }}</p>
+    <p><strong>Итераций:</strong> {{ post.iterations|default:"N/A" }}</p>
+    <p><strong>Время выполнения:</strong> {{ post.exec_time|default:"N/A" }}</p>
+    <p><strong>Средняя погрешность:</strong> {{ post.average_error|default:"N/A" }}</p>
+  </div>
+
         {% endif %}
         <!-- Секция изображения -->
         {% if post.image %}

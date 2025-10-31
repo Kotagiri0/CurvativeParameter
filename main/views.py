@@ -144,64 +144,100 @@ def forum_detail(request, post_id):
         'form': comment_form
     })
 
-# Создание нового поста
 @login_required
 def forum_create(request):
-    """
-    Создание поста на форуме вручную пользователем.
-    """
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
+            post.source = 'forum'
+
+            # Сохраняем технические поля
+            post.algorithm = form.cleaned_data.get('algorithm') or ''
+            post.a12 = form.cleaned_data.get('a12') or ''
+            post.a21 = form.cleaned_data.get('a21') or ''
+            post.iterations = form.cleaned_data.get('iterations') or ''
+            post.exec_time = form.cleaned_data.get('exec_time') or ''
+            post.average_error = form.cleaned_data.get('average_error') or ''
+
             post.save()
+            form.save_m2m()
+
             messages.success(request, "Пост успешно создан!")
             return redirect('forum_detail', post_id=post.id)
     else:
-        form = PostForm()
+        form = PostForm(user=request.user)
 
     return render(request, 'forum_create.html', {'form': form})
+
+
 
 @login_required
 def forum_delete(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if post.author == request.user and request.method == "POST":
         post.delete()
+        messages.success(request, "Пост успешно удалён.")
     return redirect('forum_list')
 
 
 @login_required
 def forum_edit(request, pk):
+    """Редактирование поста"""
     post = get_object_or_404(Post, pk=pk)
+
+    # Только автор может редактировать
     if post.author != request.user:
+        messages.error(request, "Вы не можете редактировать чужой пост.")
         return redirect('forum_list')
 
     if request.method == "POST":
         form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
-            form.save()
+            post = form.save(commit=False)
+            post.source = post.source  # сохраняем источник
+
+            post.algorithm = form.cleaned_data.get('algorithm')
+            post.a12 = form.cleaned_data.get('a12')
+            post.a21 = form.cleaned_data.get('a21')
+            post.iterations = form.cleaned_data.get('iterations')
+            post.exec_time = form.cleaned_data.get('exec_time')
+            post.average_error = form.cleaned_data.get('average_error')
+
+            post.save()
+            form.save_m2m()
+
+            messages.success(request, "Пост успешно обновлён!")
             return redirect('forum_detail', post_id=post.pk)
+
     else:
         form = PostForm(instance=post, user=request.user)
 
     return render(request, 'forum_edit.html', {'form': form, 'post': post})
 
+
 @login_required
 def share_calculation(request, result_id):
+    """Создание поста из расчёта"""
     result = get_object_or_404(CalculationResult, id=result_id)
-    print(f"CalculationResult #{result.id}:")
-    print(f"algorithm: {result.algorithm}")
-    print(f"average_op: {result.average_op}")
-    print(f"table_data: {result.table_data}")
-    print(f"get_table_data(): {result.get_table_data()}")
 
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES, user=request.user)
+
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.calculation_result = result
+            post.source = 'calculation'  # 👈 Помечаем источник
+
+            # Автоматически заполняем технические поля из расчёта
+            post.algorithm = result.algorithm or 'Не указан'
+            post.a12 = str(result.param_a) if result.param_a is not None else 'N/A'
+            post.a21 = str(result.param_b) if result.param_b is not None else 'N/A'
+            post.iterations = str(result.iterations) if result.iterations is not None else 'N/A'
+            post.exec_time = f"{result.exec_time:.2f} сек" if result.exec_time is not None else 'N/A'
+            post.average_error = f"{result.average_op:.1f}%" if result.average_op is not None else 'N/A'
 
             # Формируем содержимое поста с данными расчета
             table_data = result.get_table_data()
@@ -249,33 +285,29 @@ def share_calculation(request, result_id):
                 content_lines.append(user_content)
 
             post.content = "\n".join(content_lines)
-
-            print(f"Post content:\n{post.content}")
             post.save()
+
             messages.success(request, 'Результат расчета успешно опубликован на форуме!')
             return redirect('forum_list')
     else:
-        table_data = result.get_table_data()
-        table_data_str = "Нет данных таблицы."
-        if table_data:
-            try:
-                if isinstance(table_data, list):
-                    table_data_str = "\n".join([
-                        f"{row.get('x2', 'N/A')},{row.get('gexp', 'N/A')},{row.get('gmod', 'N/A')},{row.get('sigma', 'N/A')},{row.get('delta', 'N/A')}"
-                        for row in table_data if isinstance(row, dict)
-                    ])
-                else:
-                    table_data_str = "Ошибка в данных таблицы"
-            except Exception as e:
-                table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
-
+        # Начальные данные для формы при создании из расчёта
         initial_data = {
-            'title': f'Результат расчета #{result.id}',
-            'content': ""  # Пустое начальное значение
+            'title': f'Результат расчета: {result.title}',
+            'content': '',
+            'algorithm': result.algorithm or 'Не указан',
+            'a12': str(result.param_a) if result.param_a is not None else 'N/A',
+            'a21': str(result.param_b) if result.param_b is not None else 'N/A',
+            'iterations': str(result.iterations) if result.iterations is not None else 'N/A',
+            'exec_time': f"{result.exec_time:.2f}" if result.exec_time is not None else 'N/A',
+            'average_error': f"{result.average_op:.1f}" if result.average_op is not None else 'N/A',
         }
-        form = PostForm(initial=initial_data)
+        form = PostForm(initial=initial_data, user=request.user)
 
-    return render(request, 'forum_create.html', {'form': form, 'result': result})
+    return render(request, 'forum_create.html', {
+        'form': form,
+        'result': result,
+        'is_from_calculation': True
+    })
 
 @login_required
 def graph_view(request):
