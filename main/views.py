@@ -716,35 +716,28 @@ def databases(request):
     return render(request, "databases.html", context)
 
 
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-import json
-from .models import Table, CalculationResult
-
 @login_required
 def delete_table(request, pk):
-    table = get_object_or_404(Table, pk=pk, )
+    table = get_object_or_404(Table, pk=pk)
 
-    # Перед удалением — сохраняем snapshot данных таблицы
+    # Проверка на владельца
+    if table.author != request.user:
+        messages.error(request, "Вы не можете удалить таблицу, так как вы не являетесь её автором.")
+        return redirect("databases")
+
+    # Сохраняем snapshot для связанных расчётов
     results = CalculationResult.objects.filter(table=table)
     if results.exists():
-        # собираем точки из таблицы
-        points_data = [
-            {"x2": p.x_value, "gexp": p.y_value}
-            for p in table.points.all()
-        ]
-
+        points_data = [{"x2": p.x_value, "gexp": p.y_value} for p in table.points.all()]
         for res in results:
-            # если snapshot ещё не сохранён
             if not res.table_data:
                 res.table_data = json.dumps(points_data)
                 res.save(update_fields=["table_data"])
 
-    # теперь можно безопасно удалить таблицу
     table.delete()
-
     messages.success(request, "Таблица удалена, но расчёты и посты сохранены.")
     return redirect("databases")
+
 
 @login_required
 def create_table(request):
@@ -754,11 +747,20 @@ def create_table(request):
         temperature = float(rows[-1])
         title = rows[0]
         solution = rows[1]
-        table = Table.objects.create(temperature=temperature, title=title, solution=solution)
+
+        # Привязка к текущему пользователю
+        table = Table.objects.create(
+            temperature=temperature,
+            title=title,
+            solution=solution,
+            author=request.user
+        )
+
         for row in rows[2:-1]:
             x_value, y_value = map(float, row.split(';'))
             point = Point.objects.create(x_value=x_value, y_value=y_value)
             table.points.add(point)
+
         return HttpResponseRedirect('/databases/')
 
     return render(request, 'create_table.html')
