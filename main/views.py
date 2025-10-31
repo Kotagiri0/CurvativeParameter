@@ -22,6 +22,11 @@ from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
 param_a, param_b = 0, 0
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Post, Comment
+from .forms import PostForm, CommentForm
 
 @login_required
 def forum_list(request):
@@ -39,26 +44,21 @@ def forum_list(request):
 
 @login_required
 def forum_detail(request, post_id):
+    """
+    Отображает пост (с форума или с графика) + его комментарии.
+    Позволяет добавлять новые комментарии.
+    """
     post = get_object_or_404(Post, id=post_id)
+    calculation_result = getattr(post, 'calculation_result', None)
 
-    # Получаем расчетные данные, если они существуют
-    try:
-        calculation_result = post.calculation_result  # Исправлено на calculation
-    except AttributeError:
-        print(f"Ошибка: поле calculation не найдено в модели Post. Доступные поля: {dir(post)}")
-        calculation_result = None
-    except CalculationResult.DoesNotExist:
-        calculation_result = None
-
-    # Разделяем содержимое поста по строкам и парсим данные
+    # Попробуем извлечь параметры из поста
     lines = post.content.split("\n")
     data_lines = []
-
     for line in lines:
-        if line.strip():  # Игнорируем пустые строки
+        if line.strip():
             try:
                 parts = line.split(',')
-                if len(parts) == 5:  # Если строка имеет 5 значений
+                if len(parts) == 5:
                     x2 = parts[0].strip()
                     gexp = parts[1].strip()
                     gmod = parts[2].strip()
@@ -67,12 +67,11 @@ def forum_detail(request, post_id):
 
                     try:
                         x2 = str(float(x2))[0:5] if x2 != 'N/A' else '0.000'
-                        gexp = float(gexp) if gexp != 'N/A' else '0.0'
-                        gmod = float(gmod) if gmod != 'N/A' else '0.0'
-                        sigma = float(sigma) if sigma != 'N/A' else '0.0'
-                        delta = float(delta) if delta != 'N/A' else '0.0'
-                    except ValueError as e:
-                        print(f"Ошибка преобразования строки в числа: {line}, ошибка: {e}")
+                        gexp = float(gexp) if gexp != 'N/A' else 0.0
+                        gmod = float(gmod) if gmod != 'N/A' else 0.0
+                        sigma = float(sigma) if sigma != 'N/A' else 0.0
+                        delta = float(delta) if delta != 'N/A' else 0.0
+                    except ValueError:
                         continue
 
                     data_lines.append({
@@ -83,9 +82,9 @@ def forum_detail(request, post_id):
                         'delta': delta,
                     })
             except Exception as e:
-                print(f"Ошибка при обработке строки: {line}, ошибка: {e}")
+                print(f"Ошибка обработки строки: {line}, {e}")
 
-    # Получаем информацию о расчете, если она существует
+    # Извлечение данных о расчёте
     if calculation_result:
         result_info = {
             'param_a': calculation_result.param_a,
@@ -96,7 +95,6 @@ def forum_detail(request, post_id):
             'average_error': calculation_result.average_op,
         }
     else:
-        # Если calculation_result недоступен, парсим данные из post.content
         result_info = {}
         for line in lines:
             if line.startswith("Параметр A:"):
@@ -104,36 +102,65 @@ def forum_detail(request, post_id):
             elif line.startswith("Параметр B:"):
                 result_info['param_b'] = float(line.split(":")[1].strip())
             elif line.startswith("Итерации:"):
-                result_info['iterations'] = int(line.split(":")[1].strip()) if line.split(":")[1].strip() != 'N/A' else 'N/A'
+                try:
+                    result_info['iterations'] = int(line.split(":")[1].strip())
+                except:
+                    result_info['iterations'] = None
             elif line.startswith("Время выполнения:"):
-                time_str = line.split(":")[1].strip()
-                result_info['exec_time'] = float(time_str.replace(" сек", "")) if time_str != 'N/A' else None
+                try:
+                    time_str = line.split(":")[1].strip().replace(" сек", "")
+                    result_info['exec_time'] = float(time_str)
+                except:
+                    result_info['exec_time'] = None
             elif line.startswith("Алгоритм:"):
                 result_info['algorithm'] = line.split(":")[1].strip()
             elif line.startswith("Средняя погрешность:"):
-                error_str = line.split(":")[1].strip()
-                result_info['average_error'] = float(error_str.replace("%", "")) if error_str != 'N/A' else None
+                try:
+                    error_str = line.split(":")[1].strip().replace("%", "")
+                    result_info['average_error'] = float(error_str)
+                except:
+                    result_info['average_error'] = None
 
-    # Передаем данные в шаблон
+    # --- Работа с комментариями ---
+    comments = post.comments.all().order_by('-created_at')
+
+    if request.method == 'POST':
+        comment_form = CommentForm(request.POST)
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+            messages.success(request, "Комментарий добавлен!")
+            return redirect('forum_detail', post_id=post.id)
+    else:
+        comment_form = CommentForm()
+
     return render(request, 'forum_detail.html', {
         'post': post,
         'data_lines': data_lines,
-        'result_info': result_info
+        'result_info': result_info,
+        'comments': comments,
+        'form': comment_form
     })
 
 # Создание нового поста
 @login_required
 def forum_create(request):
+    """
+    Создание поста на форуме вручную пользователем.
+    """
     if request.method == 'POST':
         form = PostForm(request.POST, request.FILES)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
-            messages.success(request, 'Пост успешно создан!')
-            return redirect('forum_list')
+            messages.success(request, "Пост успешно создан!")
+            return redirect('forum_detail', post_id=post.id)
     else:
         form = PostForm()
+
     return render(request, 'forum_create.html', {'form': form})
 
 @login_required
@@ -689,13 +716,36 @@ def databases(request):
     return render(request, "databases.html", context)
 
 
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+import json
+from .models import Table, CalculationResult
+
 @login_required
 def delete_table(request, pk):
-    table = get_object_or_404(Table, pk=pk)
-    if request.method == 'GET':
-        table.delete()
-        return redirect('databases')
-    return redirect('databases')
+    table = get_object_or_404(Table, pk=pk, )
+
+    # Перед удалением — сохраняем snapshot данных таблицы
+    results = CalculationResult.objects.filter(table=table)
+    if results.exists():
+        # собираем точки из таблицы
+        points_data = [
+            {"x2": p.x_value, "gexp": p.y_value}
+            for p in table.points.all()
+        ]
+
+        for res in results:
+            # если snapshot ещё не сохранён
+            if not res.table_data:
+                res.table_data = json.dumps(points_data)
+                res.save(update_fields=["table_data"])
+
+    # теперь можно безопасно удалить таблицу
+    table.delete()
+
+    messages.success(request, "Таблица удалена, но расчёты и посты сохранены.")
+    return redirect("databases")
+
 @login_required
 def create_table(request):
     if request.method == 'POST':
