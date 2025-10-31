@@ -85,7 +85,18 @@ class Profile(models.Model):
 
 from cloudinary_storage.storage import MediaCloudinaryStorage
 
+from cloudinary_storage.storage import MediaCloudinaryStorage
+from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db import models
+
+
 class Post(models.Model):
+    SOURCE_CHOICES = [
+        ('forum', 'Создан вручную на форуме'),
+        ('calculation', 'Создан из расчёта'),
+    ]
+
     title = models.CharField(max_length=200, verbose_name="Заголовок")
     content = models.TextField(verbose_name="Содержание")
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts", verbose_name="Автор")
@@ -97,7 +108,30 @@ class Post(models.Model):
         blank=True,
         verbose_name="Изображение"
     )
-    calculation_result = models.ForeignKey('CalculationResult', on_delete=models.SET_NULL, null=True, blank=True)
+
+    calculation_result = models.ForeignKey(
+        'CalculationResult',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Результат расчёта"
+    )
+
+    # 👇 Новые поля — технические параметры, которые можно редактировать при создании поста вручную
+    algorithm = models.CharField(max_length=100, blank=True, null=True, verbose_name="Алгоритм")
+    a12 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A12")
+    a21 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A21")
+    iterations = models.CharField(max_length=50, blank=True, null=True, verbose_name="Итерации")
+    exec_time = models.CharField(max_length=50, blank=True, null=True, verbose_name="Время выполнения")
+    average_error = models.CharField(max_length=50, blank=True, null=True, verbose_name="Средняя погрешность")
+
+    # 👇 Пометка об источнике поста
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default='forum',
+        verbose_name="Источник"
+    )
 
     class Meta:
         verbose_name = "Пост"
@@ -105,6 +139,12 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_from_calculation(self):
+        """Проверка, создан ли пост из расчёта."""
+        return self.source == 'calculation'
+
 class Comment(models.Model):
     post = models.ForeignKey(
         Post,

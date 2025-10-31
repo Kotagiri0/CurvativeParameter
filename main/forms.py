@@ -96,76 +96,110 @@ class ProfileUpdateForm(forms.ModelForm):
         fields = ['avatar']
 
 
-class PostForm(forms.ModelForm):
-    comment = forms.CharField(
-        widget=forms.Textarea(attrs={'placeholder': 'Введите комментарий'}),
-        label='Комментарий',
-        required=False
-    )
+from django import forms
+from .models import Post, CalculationResult, Comment
 
+
+class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['title', 'content', 'image', 'calculation_result']
+        fields = [
+            'title',
+            'content',
+            'image',
+            'calculation_result',
+            'algorithm',
+            'a12',
+            'a21',
+            'iterations',
+            'exec_time',
+            'average_error'
+        ]
         widgets = {
-            'title': forms.TextInput(attrs={'placeholder': 'Введите заголовок'}),
-            'content': forms.TextInput(),  # Скрываем полное поле content
-            'image': forms.FileInput(),
-            'calculation_result': forms.Select(),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Введите заголовок'
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Введите текст поста...'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control'
+            }),
+            'calculation_result': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'algorithm': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Например: Метод Гаусса (опционально)'
+            }),
+            'a12': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Значение A₁₂ (опционально)'
+            }),
+            'a21': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Значение A₂₁ (опционально)'
+            }),
+            'iterations': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Количество итераций (опционально)'
+            }),
+            'exec_time': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Время выполнения (опционально)'
+            }),
+            'average_error': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Средняя погрешность % (опционально)'
+            }),
         }
         labels = {
             'title': 'Заголовок',
             'content': 'Описание',
-            'image': 'Изображение',
-            'calculation_result': 'Результат расчёта',
+            'image': 'Изображение (опционально)',
+            'calculation_result': 'Привязать к расчёту (опционально)',
+            'algorithm': 'Алгоритм',
+            'a12': 'A₁₂',
+            'a21': 'A₂₁',
+            'iterations': 'Итерации',
+            'exec_time': 'Время выполнения',
+            'average_error': 'Средняя погрешность (%)',
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # Фильтруем calculation_result по пользователю
+
+        # Показываем пользователю только его расчёты
         if user:
             self.fields['calculation_result'].queryset = CalculationResult.objects.filter(user=user)
-        # Устанавливаем начальное значение comment из content
-        if self.instance and self.instance.content:
-            self.fields['comment'].initial = extract_comment(self.instance.content)
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        # Обновляем content на основе calculation_result и comment
-        new_comment = self.cleaned_data['comment']
-        calc_result = self.cleaned_data['calculation_result']
-        if calc_result:
-            # Формируем техническую часть content
-            table_data = json.loads(calc_result.table_data) if calc_result.table_data else []
-            table_lines = [",".join(map(str, row.values())) for row in table_data]
-            content_lines = [
-                f"Название: {calc_result.title}",
-                f"Параметр A: {calc_result.param_a}",
-                f"Параметр B: {calc_result.param_b}",
-                f"Итерации: {calc_result.iterations}",
-                f"Время выполнения: {calc_result.exec_time} сек",
-                f"Алгоритм: {calc_result.algorithm}",
-                f"Средняя погрешность: {calc_result.average_op}%",
-                "Данные таблицы:",
-                *table_lines
-            ]
-            if new_comment.strip():
-                content_lines.append(new_comment)
-            instance.content = "\n".join(content_lines)
-        else:
-            # Если calculation_result не выбран, сохраняем только комментарий
-            instance.content = new_comment if new_comment.strip() else ""
+        # Делаем calculation_result необязательным
+        self.fields['calculation_result'].required = False
 
-        if commit:
-            instance.save()
-        return instance
-from django import forms
-from .models import Comment
+        # Все технические поля тоже необязательны
+        self.fields['algorithm'].required = False
+        self.fields['a12'].required = False
+        self.fields['a21'].required = False
+        self.fields['iterations'].required = False
+        self.fields['exec_time'].required = False
+        self.fields['average_error'].required = False
+
 
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
         fields = ['content']
         widgets = {
-            'content': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Введите комментарий...'})
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Введите комментарий...'
+            })
+        }
+        labels = {
+            'content': 'Комментарий'
         }
