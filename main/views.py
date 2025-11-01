@@ -229,9 +229,21 @@ def share_calculation(request, result_id):
             post = form.save(commit=False)
             post.author = request.user
             post.calculation_result = result
-            post.source = 'calculation'  # 👈 Помечаем источник
+            post.source = 'calculation'
 
-            # Автоматически заполняем технические поля из расчёта
+            # 💾 Делаем snapshot (копию расчёта)
+            post.calculation_snapshot = {
+                'param_a': result.param_a,
+                'param_b': result.param_b,
+                'iterations': result.iterations,
+                'exec_time': result.exec_time,
+                'algorithm': result.algorithm,
+                'average_op': result.average_op,
+                'table_data': result.get_table_data(),
+                'title': result.title,
+            }
+
+            # Автоматически заполняем технические поля
             post.algorithm = result.algorithm or 'Не указан'
             post.a12 = str(result.param_a) if result.param_a is not None else 'N/A'
             post.a21 = str(result.param_b) if result.param_b is not None else 'N/A'
@@ -239,10 +251,9 @@ def share_calculation(request, result_id):
             post.exec_time = f"{result.exec_time:.2f} сек" if result.exec_time is not None else 'N/A'
             post.average_error = f"{result.average_op:.1f}%" if result.average_op is not None else 'N/A'
 
-            # Формируем содержимое поста с данными расчета
+            # Формируем текст поста
             table_data = result.get_table_data()
             table_data_str = "Нет данных таблицы."
-
             if table_data:
                 try:
                     if isinstance(table_data, list):
@@ -255,33 +266,22 @@ def share_calculation(request, result_id):
                 except Exception as e:
                     table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
 
-            # Формируем пост content
             content_lines = [
                 f"Результат расчета #{result.id}:",
                 f"Название: {result.title}",
                 f"Параметр A: {result.param_a:.3f}",
                 f"Параметр B: {result.param_b:.3f}",
                 f"Итерации: {result.iterations if result.iterations is not None else 'N/A'}",
+                f"Время выполнения: {result.exec_time:.2f} сек" if result.exec_time else "Время выполнения: N/A",
+                f"Алгоритм: {result.algorithm or 'Не указан'}",
+                f"Средняя погрешность: {result.average_op:.1f}%" if result.average_op else "Средняя погрешность: N/A",
+                "Данные таблицы:",
+                table_data_str,
+                ""
             ]
 
-            if result.exec_time is not None:
-                content_lines.append(f"Время выполнения: {result.exec_time:.2f} сек")
-            else:
-                content_lines.append("Время выполнения: N/A")
-
-            content_lines.append(f"Алгоритм: {result.algorithm if result.algorithm else 'Не указан'}")
-
-            if result.average_op is not None:
-                content_lines.append(f"Средняя погрешность: {result.average_op:.1f}%")
-            else:
-                content_lines.append("Средняя погрешность: N/A")
-
-            content_lines.append("Данные таблицы:")
-            content_lines.append(table_data_str)
-            content_lines.append("")  # Пустая строка перед пользовательским комментарием
-
             user_content = form.cleaned_data['content'].strip()
-            if user_content:  # Добавляем комментарий только если он не пустой
+            if user_content:
                 content_lines.append(user_content)
 
             post.content = "\n".join(content_lines)
@@ -289,8 +289,8 @@ def share_calculation(request, result_id):
 
             messages.success(request, 'Результат расчета успешно опубликован на форуме!')
             return redirect('forum_list')
+
     else:
-        # Начальные данные для формы при создании из расчёта
         initial_data = {
             'title': f'Результат расчета: {result.title}',
             'content': '',
@@ -308,6 +308,7 @@ def share_calculation(request, result_id):
         'result': result,
         'is_from_calculation': True
     })
+
 
 @login_required
 def graph_view(request):
@@ -429,12 +430,33 @@ def databases(request):
 
 @login_required
 def delete_result(request, result_id):
+    """Удаление расчёта пользователем без потери постов"""
     result = get_object_or_404(CalculationResult, id=result_id)
 
-    if request.user == result.user:
-        result.delete()
+    if request.user != result.user:
+        messages.error(request, "Вы не можете удалить чужой расчёт.")
+        return redirect('profile')
 
+    # 💾 Перед удалением — обновляем посты, чтобы сохранить копию данных
+    related_posts = Post.objects.filter(calculation_result=result)
+    for post in related_posts:
+        if not post.calculation_snapshot:
+            post.calculation_snapshot = {
+                'param_a': result.param_a,
+                'param_b': result.param_b,
+                'iterations': result.iterations,
+                'exec_time': result.exec_time,
+                'algorithm': result.algorithm,
+                'average_op': result.average_op,
+                'table_data': result.get_table_data(),
+                'title': result.title,
+            }
+            post.save(update_fields=['calculation_snapshot'])
+
+    result.delete()
+    messages.success(request, "Расчёт удалён. Посты сохранены.")
     return redirect('profile')
+
 
 
 @login_required

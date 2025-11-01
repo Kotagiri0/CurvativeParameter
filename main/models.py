@@ -117,7 +117,9 @@ class Post(models.Model):
         verbose_name="Результат расчёта"
     )
 
-    # 👇 Новые поля — технические параметры, которые можно редактировать при создании поста вручную
+    # 👇 Новое поле — snapshot (копия данных расчёта)
+    calculation_snapshot = models.JSONField(null=True, blank=True, verbose_name="Копия данных расчета")
+
     algorithm = models.CharField(max_length=100, blank=True, null=True, verbose_name="Алгоритм")
     a12 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A12")
     a21 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A21")
@@ -125,7 +127,6 @@ class Post(models.Model):
     exec_time = models.CharField(max_length=50, blank=True, null=True, verbose_name="Время выполнения")
     average_error = models.CharField(max_length=50, blank=True, null=True, verbose_name="Средняя погрешность")
 
-    # 👇 Пометка об источнике поста
     source = models.CharField(
         max_length=20,
         choices=SOURCE_CHOICES,
