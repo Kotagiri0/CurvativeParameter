@@ -68,9 +68,15 @@
           <img src="data:image/png;base64,{{ graphic }}" alt="График" class="cp-graphic-img" />
         </div>
         <div class="cp-params-tags">
-          <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
-          <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
-        </div>
+  <span class="cp-table-tag">A<sub>12</sub> = {{ a }}</span>
+  <span class="cp-table-tag">A<sub>21</sub> = {{ b }}</span>
+</div>
+
+<!-- Кнопка Скачать график -->
+<a href="{% url 'download_graph' %}" class="cp-btn cp-btn-primary" style="margin-top: 15px;">
+  <i class="fas fa-download"></i> Скачать график
+</a>
+
 
         <!-- Кнопка "Поделиться" -->
        {% if result_id %}
