@@ -312,7 +312,6 @@ def share_calculation(request, result_id):
 
 @login_required
 def graph_view(request):
-    # Достаём из сессии сохранённые данные
     result_id = request.session.get('result_id')
     table_id = request.session.get('table_id')
     param_a = request.session.get('param_a')
@@ -321,7 +320,6 @@ def graph_view(request):
     initial_data = {}
     result = None
 
-    # Заполняем форму старыми значениями
     if result_id:
         try:
             result = CalculationResult.objects.get(id=result_id)
@@ -343,19 +341,21 @@ def graph_view(request):
     form = GraphForm(request.POST or None, initial=initial_data)
     context = {'form': form}
 
-    # POST — строим график
+    is_post = False
+
     if request.method == 'POST' and form.is_valid():
+        is_post = True
+
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
+
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
-        # Сохраняем параметры в сессию
         request.session['table_id'] = table_id
         request.session['param_a'] = parameter_a
         request.session['param_b'] = parameter_b
 
-        # Данные графика
         new_x = np.linspace(0, 1, 1000)
         new_y = []
         xx, yy = [], []
@@ -370,7 +370,6 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
-        # Рисуем график
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(new_x, new_y, color='red', markersize=1)
         ax.scatter(xx, yy, color='blue')
@@ -386,10 +385,8 @@ def graph_view(request):
         buffer.close()
         plt.close(fig)
 
-        # ✅ Сохраняем график в сессию для скачивания
         request.session['last_graph'] = graphic
 
-        # Таблица ошибок
         table_data = []
         for x, y_exp in zip(xx, yy):
             x1 = 1 - x
@@ -405,7 +402,6 @@ def graph_view(request):
                 "delta": delta
             })
 
-        # Если график из результатов — продолжаем цепочку
         if result:
             request.session['result_id'] = result.id
             context.update({'result_id': result.id, 'graphic_result': result})
@@ -419,11 +415,12 @@ def graph_view(request):
             'table_data': table_data
         })
 
-    # Передаём значения для отображения (если не POST)
-    if param_a is not None and param_b is not None:
+    # ✅ Передаём старые параметры только если НЕ POST
+    if not is_post and param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
     return render(request, 'graphs.html', context)
+
 
 
 @login_required
