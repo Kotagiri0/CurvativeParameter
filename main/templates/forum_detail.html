@@ -29,113 +29,25 @@
   </div>
 
   <div class="cp-post-content">
-    {% if post.calculation_result %}
-      <!-- Пост с расчетом (автоматически созданный) -->
-      <div class="cp-content-row">
-        <div class="cp-result-card">
-          <h3>Результат расчета</h3>
-          <ul class="cp-result-list">
-            <li><span class="cp-label">Параметр A<sub>12</sub></span><span class="cp-value">{{ post.calculation_result.param_a|floatformat:3 }}</span></li>
-            <li><span class="cp-label">Параметр A<sub>21</sub></span><span class="cp-value">{{ post.calculation_result.param_b|floatformat:3 }}</span></li>
-            <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.calculation_result.iterations|default:"N/A" }}</span></li>
-            <li><span class="cp-label">Время выполнения</span><span class="cp-value">{% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</span></li>
-            <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.calculation_result.algorithm|default:"Не указан" }}</span></li>
-            <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</span></li>
-          </ul>
-        </div>
-
-        <div class="cp-description-card">
-          <h3>Описание</h3>
-          {% if post.content|extract_comment %}
-            <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
-          {% else %}
-            <p class="cp-comment-placeholder">Нет описания</p>
-          {% endif %}
-          {% if post.image %}
-            <div class="cp-post-image-container">
-              <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      {% if post.calculation_result.get_table_data %}
-        <div class="cp-table-container">
-          <div class="cp-table-header">
-            <h3>Данные таблицы</h3>
-            <button id="toggle-table" class="cp-toggle-button">
-              <span id="toggle-text">Скрыть таблицу</span>
-              <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 9l6 6 6-6"></path>
-              </svg>
-            </button>
-          </div>
-          <div id="table-content" class="cp-table-content">
-            <table class="cp-table">
-              <thead>
-                <tr>
-                  <th>x<sub>2</sub></th>
-                  <th>G<sup>E</sup><sub>exp</sub></th>
-                  <th>G<sup>E</sup><sub>mod</sub></th>
-                  <th>σ (%)</th>
-                  <th>Δ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for row in post.calculation_result.get_table_data %}
-                  <tr class="{% cycle 'row-even' 'row-odd' %}">
-                    <td>{{ row.x2|default:"N/A" }}</td>
-                    <td>{{ row.gexp|default:"N/A" }}</td>
-                    <td>{{ row.gmod|default:"N/A" }}</td>
-                    <td>{{ row.sigma|default:"N/A" }}</td>
-                    <td>{{ row.delta|default:"N/A" }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      {% endif %}
-
-    {% else %}
-      <!-- Обычный пост (созданный на форуме) -->
-
-      <!-- 👇 Технические параметры (если заполнены) -->
-      {% if post.algorithm or post.a12 or post.a21 or post.iterations or post.exec_time or post.average_error %}
-      <div class="cp-result-card" style="margin-bottom: 1.5rem;">
-        <h3>Параметры расчёта</h3>
+  {% if post.calculation_result %}
+    <!-- ✅ Пост с расчетом (активный расчет) -->
+    <div class="cp-content-row">
+      <div class="cp-result-card">
+        <h3>Результат расчета</h3>
         <ul class="cp-result-list">
-          {% if post.algorithm %}
-          <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.algorithm }}</span></li>
-          {% endif %}
-
-          {% if post.a12 %}
-          <li><span class="cp-label">A<sub>12</sub></span><span class="cp-value">{{ post.a12 }}</span></li>
-          {% endif %}
-
-          {% if post.a21 %}
-          <li><span class="cp-label">A<sub>21</sub></span><span class="cp-value">{{ post.a21 }}</span></li>
-          {% endif %}
-
-          {% if post.iterations %}
-          <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.iterations }}</span></li>
-          {% endif %}
-
-          {% if post.exec_time %}
-          <li><span class="cp-label">Время выполнения</span><span class="cp-value">{{ post.exec_time }}</span></li>
-          {% endif %}
-
-          {% if post.average_error %}
-          <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{{ post.average_error }}</span></li>
-          {% endif %}
+          <li><span class="cp-label">Параметр A<sub>12</sub></span><span class="cp-value">{{ post.calculation_result.param_a|floatformat:3 }}</span></li>
+          <li><span class="cp-label">Параметр A<sub>21</sub></span><span class="cp-value">{{ post.calculation_result.param_b|floatformat:3 }}</span></li>
+          <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.calculation_result.iterations|default:"N/A" }}</span></li>
+          <li><span class="cp-label">Время выполнения</span><span class="cp-value">{% if post.calculation_result.exec_time %}{{ post.calculation_result.exec_time|floatformat:2 }} сек{% else %}N/A{% endif %}</span></li>
+          <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.calculation_result.algorithm|default:"Не указан" }}</span></li>
+          <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{% if post.calculation_result.average_op %}{{ post.calculation_result.average_op|floatformat:1 }}%{% else %}N/A{% endif %}</span></li>
         </ul>
       </div>
-      {% endif %}
 
       <div class="cp-description-card">
         <h3>Описание</h3>
-        {% if post.content %}
-          <p class="cp-comment">{{ post.content|linebreaks }}</p>
+        {% if post.content|extract_comment %}
+          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
         {% else %}
           <p class="cp-comment-placeholder">Нет описания</p>
         {% endif %}
@@ -145,31 +57,181 @@
           </div>
         {% endif %}
       </div>
+    </div>
+
+    {% if post.calculation_result.get_table_data %}
+      <div class="cp-table-container">
+        <div class="cp-table-header">
+          <h3>Данные таблицы</h3>
+          <button id="toggle-table" class="cp-toggle-button">
+            <span id="toggle-text">Скрыть таблицу</span>
+            <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="table-content" class="cp-table-content">
+          <table class="cp-table">
+            <thead>
+              <tr>
+                <th>x<sub>2</sub></th>
+                <th>G<sup>E</sup><sub>exp</sub></th>
+                <th>G<sup>E</sup><sub>mod</sub></th>
+                <th>σ (%)</th>
+                <th>Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in post.calculation_result.get_table_data %}
+                <tr class="{% cycle 'row-even' 'row-odd' %}">
+                  <td>{{ row.x2|default:"N/A" }}</td>
+                  <td>{{ row.gexp|default:"N/A" }}</td>
+                  <td>{{ row.gmod|default:"N/A" }}</td>
+                  <td>{{ row.sigma|default:"N/A" }}</td>
+                  <td>{{ row.delta|default:"N/A" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     {% endif %}
 
-    <!-- Комментарии -->
-    <div class="cp-comments-section">
-      <h3>Комментарии ({{ comments.count }})</h3>
-      {% for comment in comments %}
-        <div class="cp-comment-item">
-          <p><strong>{{ comment.author.username }}</strong> <small>{{ comment.created_at|date:"d.m.Y H:i" }}</small></p>
-          <p>{{ comment.content|linebreaks }}</p>
-        </div>
-      {% empty %}
-        <p>Комментариев пока нет.</p>
-      {% endfor %}
+  {% elif post.calculation_snapshot %}
+    <!-- ✅ Пост с удаленным расчетом (сохранённая версия) -->
+    <div class="cp-content-row">
+      <div class="cp-result-card">
+        <h3>Результат расчета (сохранённая версия)</h3>
+        <ul class="cp-result-list">
+          <li><span class="cp-label">Параметр A<sub>12</sub></span><span class="cp-value">{{ post.calculation_snapshot.param_a|floatformat:3 }}</span></li>
+          <li><span class="cp-label">Параметр A<sub>21</sub></span><span class="cp-value">{{ post.calculation_snapshot.param_b|floatformat:3 }}</span></li>
+          <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.calculation_snapshot.iterations|default:"N/A" }}</span></li>
+          <li><span class="cp-label">Время выполнения</span><span class="cp-value">{{ post.calculation_snapshot.exec_time|default:"N/A" }}</span></li>
+          <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.calculation_snapshot.algorithm|default:"Не указан" }}</span></li>
+          <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{{ post.calculation_snapshot.average_op|default:"N/A" }}</span></li>
+        </ul>
+      </div>
 
-      {% if user.is_authenticated %}
-        <form method="post">
-          {% csrf_token %}
-          {{ form.as_p }}
-          <button type="submit" class="btn btn-primary">Отправить</button>
-        </form>
+      <div class="cp-description-card">
+        <h3>Описание</h3>
+        {% if post.content|extract_comment %}
+          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+        {% else %}
+          <p class="cp-comment-placeholder">Нет описания</p>
+        {% endif %}
+        {% if post.image %}
+          <div class="cp-post-image-container">
+            <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if post.calculation_snapshot.table_data %}
+      <div class="cp-table-container">
+        <div class="cp-table-header">
+          <h3>Данные таблицы</h3>
+          <button id="toggle-table" class="cp-toggle-button">
+            <span id="toggle-text">Скрыть таблицу</span>
+            <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="table-content" class="cp-table-content">
+          <table class="cp-table">
+            <thead>
+              <tr>
+                <th>x<sub>2</sub></th>
+                <th>G<sup>E</sup><sub>exp</sub></th>
+                <th>G<sup>E</sup><sub>mod</sub></th>
+                <th>σ (%)</th>
+                <th>Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in post.calculation_snapshot.table_data %}
+                <tr class="{% cycle 'row-even' 'row-odd' %}">
+                  <td>{{ row.x2|default:"N/A" }}</td>
+                  <td>{{ row.gexp|default:"N/A" }}</td>
+                  <td>{{ row.gmod|default:"N/A" }}</td>
+                  <td>{{ row.sigma|default:"N/A" }}</td>
+                  <td>{{ row.delta|default:"N/A" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <!-- 📝 Обычный пост (созданный на форуме) -->
+    {% if post.algorithm or post.a12 or post.a21 or post.iterations or post.exec_time or post.average_error %}
+      <div class="cp-result-card" style="margin-bottom: 1.5rem;">
+        <h3>Параметры расчёта</h3>
+        <ul class="cp-result-list">
+          {% if post.algorithm %}
+          <li><span class="cp-label">Алгоритм</span><span class="cp-value">{{ post.algorithm }}</span></li>
+          {% endif %}
+          {% if post.a12 %}
+          <li><span class="cp-label">A<sub>12</sub></span><span class="cp-value">{{ post.a12 }}</span></li>
+          {% endif %}
+          {% if post.a21 %}
+          <li><span class="cp-label">A<sub>21</sub></span><span class="cp-value">{{ post.a21 }}</span></li>
+          {% endif %}
+          {% if post.iterations %}
+          <li><span class="cp-label">Итераций</span><span class="cp-value">{{ post.iterations }}</span></li>
+          {% endif %}
+          {% if post.exec_time %}
+          <li><span class="cp-label">Время выполнения</span><span class="cp-value">{{ post.exec_time }}</span></li>
+          {% endif %}
+          {% if post.average_error %}
+          <li><span class="cp-label">Средняя погрешность</span><span class="cp-value">{{ post.average_error }}</span></li>
+          {% endif %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <div class="cp-description-card">
+      <h3>Описание</h3>
+      {% if post.content %}
+        <p class="cp-comment">{{ post.content|linebreaks }}</p>
       {% else %}
-        <p>Войдите, чтобы оставить комментарий.</p>
+        <p class="cp-comment-placeholder">Нет описания</p>
+      {% endif %}
+      {% if post.image %}
+        <div class="cp-post-image-container">
+          <img src="{{ post.image.url }}" alt="{{ post.title }}" class="cp-post-img" />
+        </div>
       {% endif %}
     </div>
+  {% endif %}
+
+  <!-- 💬 Комментарии -->
+  <div class="cp-comments-section">
+    <h3>Комментарии ({{ comments.count }})</h3>
+    {% for comment in comments %}
+      <div class="cp-comment-item">
+        <p><strong>{{ comment.author.username }}</strong> <small>{{ comment.created_at|date:"d.m.Y H:i" }}</small></p>
+        <p>{{ comment.content|linebreaks }}</p>
+      </div>
+    {% empty %}
+      <p>Комментариев пока нет.</p>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Отправить</button>
+      </form>
+    {% else %}
+      <p>Войдите, чтобы оставить комментарий.</p>
+    {% endif %}
   </div>
+</div>
+
 </section>
 
 
