@@ -483,13 +483,21 @@
           throw new Error('Сервер вернул невалидный JSON');
         }
 
-        if (response.ok) {
-          updateResults(data);
-          resultsContainer.style.display = 'block';
-        } else {
-          console.error('Ошибка сервера:', response.status, data);
-          alert(`Ошибка сервера: ${data.error || 'Неизвестная ошибка'}`);
-        }
+       if (response.ok) {
+  updateResults(data);
+  resultsContainer.style.display = 'block';
+} else {
+  console.error('Ошибка сервера:', response.status, data);
+  alert(`⚠ Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+
+  // 🔁 Автоматическое обновление страницы при критической ошибке
+  if (data.reload) {
+    setTimeout(() => {
+      location.reload();
+    }, 2500); // 2.5 секунды задержки для UX
+  }
+}
+
       } catch (error) {
         console.error('Ошибка запроса:', error);
         alert(`Произошла ошибка: ${error.message}`);
