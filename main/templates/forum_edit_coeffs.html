@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load string_filters %}
+
+{% block title %}Редактировать пост — {{ post.title }}{% endblock %}
+
+{% block content %}
+<section class="cp-section">
+  <div class="cp-header">
+    <div class="cp-header-left">
+      <a href="{% url 'forum_detail' post.id %}" class="cp-back-button">
+        <svg class="cp-back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+        <span>Назад к посту</span>
+      </a>
+    </div>
+    <h2><i class="fas fa-pencil-alt"></i> Редактировать пост</h2>
+    <div class="cp-meta">
+      <p><strong>Автор:</strong> {{ post.author.username }}</p>
+      <p><strong>Создан:</strong> {{ post.created_at|date:"d.m.Y H:i" }}</p>
+      {% if post.source == 'forum' %}
+        <p><span class="cp-badge cp-badge-forum">Создан на форуме</span></p>
+      {% else %}
+        <p><span class="cp-badge cp-badge-calc">Создан из расчёта</span></p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="cp-graph-card">
+    <form method="POST" class="cp-edit-form" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Ошибки формы -->
+      {% if form.errors %}
+        <div class="cp-form-errors">
+          {% for field in form %}
+            {% for error in field.errors %}
+              <p class="cp-error"><strong>{{ field.label }}:</strong> {{ error }}</p>
+            {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <p class="cp-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="cp-content-row">
+        <!-- Левая колонка -->
+        <div class="cp-form-card">
+          <h3>Основная информация</h3>
+
+          <div class="cp-form-group">
+            <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+            <div class="cp-input-wrapper">
+              {{ form.title }}
+            </div>
+          </div>
+
+          {% if form.calculation_result %}
+          <div class="cp-form-group">
+            <label for="{{ form.calculation_result.id_for_label }}">{{ form.calculation_result.label }}</label>
+            <div class="cp-input-wrapper">
+              {{ form.calculation_result }}
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="cp-form-group">
+            <label for="{{ form.content.id_for_label }}">{{ form.content.label }}</label>
+            <div class="cp-input-wrapper">
+              {{ form.content }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="cp-form-card">
+          <h3>Параметры расчёта</h3>
+
+          {% for field in form %}
+            {% if field.name in 'algorithm a12 a21 iterations exec_time average_error' %}
+              <div class="cp-form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <div class="cp-input-wrapper">
+                  {{ field }}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Изображение -->
+          <div class="cp-form-group">
+            <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+            <div class="cp-file-input-wrapper">
+              <span class="cp-file-placeholder">
+                {% if post.image %}Текущее изображение{% else %}Выберите изображение...{% endif %}
+              </span>
+              {{ form.image }}
+            </div>
+
+            <div class="cp-image-preview">
+              {% if post.image %}
+                <img id="image-preview" src="{{ post.image.url }}" alt="Превью">
+              {% else %}
+                <img id="image-preview" alt="Превью" style="display:none;">
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопки -->
+      <div class="cp-btn-group">
+        <a href="{% url 'forum_detail' post.id %}" class="cp-btn cp-btn-secondary">
+          <i class="fas fa-times"></i> Отмена
+        </a>
+        <button type="submit" class="cp-btn cp-btn-primary">
+          <i class="fas fa-save"></i> Сохранить
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<style>
+  /* === Стили формы — в стиле forum_detail === */
+  .cp-edit-form {
+    width: 100%;
+  }
+
+  .cp-form-errors {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #fca5a5;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  [data-theme="dark"] .cp-form-errors {
+    background: rgba(248, 113, 113, 0.2);
+    border-color: #f87171;
+  }
+
+  .cp-error {
+    color: #ef4444;
+    margin: 0.5rem 0;
+  }
+
+  [data-theme="dark"] .cp-error {
+    color: #f87171;
+  }
+
+  .cp-content-row {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .cp-form-card {
+    flex: 1;
+    background: var(--card-bg-light);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-form-card {
+    background: var(--card-bg-dark);
+    border-color: var(--border-dark);
+    box-shadow: var(--shadow-dark);
+  }
+
+  .cp-form-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.15);
+  }
+
+  .cp-form-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    color: var(--text-color-light);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+  }
+
+  [data-theme="dark"] .cp-form-card h3 {
+    color: var(--text-color-dark);
+    border-bottom-color: #60a5fa;
+  }
+
+  .cp-form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .cp-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color-light);
+    font-size: 0.95rem;
+  }
+
+  [data-theme="dark"] .cp-form-group label {
+    color: var(--text-color-dark);
+  }
+
+  /* === Поля ввода — как в формах forum_detail === */
+  .cp-input-wrapper {
+    position: relative;
+  }
+
+  .cp-input-wrapper input,
+  .cp-input-wrapper textarea,
+  .cp-input-wrapper select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-light);
+    border-radius: 0.75rem;
+    background: var(--card-bg-light);
+    color: var(--text-color-light);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="dark"] .cp-input-wrapper input,
+  [data-theme="dark"] .cp-input-wrapper textarea,
+  [data-theme="dark"] .cp-input-wrapper select {
+    background: var(--card-bg-dark);
+    border-color: var(--border-dark);
+    color: var(--text-color-dark);
+  }
+
+  .cp-input-wrapper input:focus,
+  .cp-input-wrapper textarea:focus,
+  .cp-input-wrapper select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  [data-theme="dark"] .cp-input-wrapper input:focus,
+  [data-theme="dark"] .cp-input-wrapper textarea:focus,
+  [data-theme="dark"] .cp-input-wrapper select:focus {
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+  }
+
+  .cp-input-wrapper textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+
+  /* === Загрузка файла === */
+  .cp-file-input-wrapper {
+    position: relative;
+    display: block;
+  }
+
+  .cp-file-placeholder {
+    display: block;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg-light);
+    border: 1px dashed var(--border-light);
+    border-radius: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-color-light);
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="dark"] .cp-file-placeholder {
+    background: var(--card-bg-dark);
+    border-color: var(--border-dark);
+    color: var(--text-color-dark);
+  }
+
+  .cp-file-input-wrapper input[type="file"] {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .cp-file-placeholder:hover {
+    border-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .cp-image-preview {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  .cp-image-preview img {
+    max-width: 280px;
+    max-height: 280px;
+    border-radius: 1rem;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-light);
+    transition: transform 0.3s ease;
+  }
+
+  [data-theme="dark"] .cp-image-preview img {
+    border-color: var(--border-dark);
+  }
+
+  .cp-image-preview img:hover {
+    transform: scale(1.05);
+  }
+
+  /* === Кнопки === */
+  .cp-btn-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+
+  .cp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .cp-btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+  }
+
+  .cp-btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+  }
+
+  .cp-btn-secondary {
+    background: #6b7280;
+    color: white;
+  }
+
+  .cp-btn-secondary:hover {
+    background: #4b5563;
+    transform: translateY(-2px);
+  }
+
+  [data-theme="dark"] .cp-btn-secondary {
+    background: #4b5563;
+  }
+
+  [data-theme="dark"] .cp-btn-secondary:hover {
+    background: #374151;
+  }
+
+  /* === Адаптивность === */
+  @media (max-width: 768px) {
+    .cp-content-row { flex-direction: column; }
+    .cp-form-card h3 { font-size: 1.35rem; }
+    .cp-image-preview img { max-width: 220px; max-height: 220px; }
+    .cp-btn-group { flex-direction: column; }
+    .cp-btn { width: 100%; justify-content: center; }
+  }
+
+  @media (max-width: 480px) {
+    .cp-image-preview img { max-width: 180px; max-height: 180px; }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('.cp-file-input-wrapper input[type="file"]');
+    const placeholder = document.querySelector('.cp-file-placeholder');
+    const preview = document.getElementById('image-preview');
+
+    if (fileInput && placeholder && preview) {
+      fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          placeholder.textContent = this.files[0].name;
+          const reader = new FileReader();
+          reader.onload = e => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+          };
+          reader.readAsDataURL(this.files[0]);
+        } else {
+          placeholder.textContent = 'Выберите изображение...';
+          {% if post.image %}
+            preview.src = '{{ post.image.url }}';
+            preview.style.display = 'block';
+          {% else %}
+            preview.style.display = 'none';
+          {% endif %}
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
