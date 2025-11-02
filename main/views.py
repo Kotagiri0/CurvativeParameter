@@ -184,37 +184,25 @@ def forum_delete(request, pk):
 
 @login_required
 def forum_edit(request, pk):
-    """Редактирование поста"""
     post = get_object_or_404(Post, pk=pk)
 
-    # Только автор может редактировать
     if post.author != request.user:
-        messages.error(request, "Вы не можете редактировать чужой пост.")
+        messages.error(request, "Вы не можете редактировать чужие посты.")
         return redirect('forum_list')
 
-    if request.method == "POST":
+    if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
-            post.source = post.source  # сохраняем источник
-
-            post.algorithm = form.cleaned_data.get('algorithm')
-            post.a12 = form.cleaned_data.get('a12')
-            post.a21 = form.cleaned_data.get('a21')
-            post.iterations = form.cleaned_data.get('iterations')
-            post.exec_time = form.cleaned_data.get('exec_time')
-            post.average_error = form.cleaned_data.get('average_error')
-
+            post.author = request.user
             post.save()
-            form.save_m2m()
-
             messages.success(request, "Пост успешно обновлён!")
-            return redirect('forum_detail', post_id=post.pk)
-
+            return redirect('forum_detail', post_id=post.id)
     else:
         form = PostForm(instance=post, user=request.user)
 
     return render(request, 'forum_edit.html', {'form': form, 'post': post})
+
 
 
 @login_required

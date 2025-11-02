@@ -25,22 +25,59 @@
           </div>
         {% endif %}
 
+        <!-- Заголовок -->
         <div class="cp-form-group">
           <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
           {{ form.title }}
         </div>
+
+        <!-- Расчёт -->
         <div class="cp-form-group">
           <label for="{{ form.calculation_result.id_for_label }}">{{ form.calculation_result.label }}:</label>
           {{ form.calculation_result }}
         </div>
+
+        <!-- Основной текст -->
         <div class="cp-form-group">
-          <p style="color: var(--error-color); font-size: 0.9rem; margin-bottom: 10px;">
-            Внимание: здесь редактируется только пользовательский комментарий. Технические данные обновляются при выборе результата расчёта.
-          </p>
-          <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}:</label>
-          {{ form.comment }}
-          {{ form.content }} <!-- Скрытое поле для полного content -->
+          <label for="{{ form.content.id_for_label }}">{{ form.content.label }}:</label>
+          {{ form.content }}
         </div>
+
+        <!-- Новое: блок редактирования параметров -->
+        <hr>
+        <h3 style="margin-top: 20px;">Параметры расчёта</h3>
+
+        <div class="cp-form-group">
+          <label for="{{ form.algorithm.id_for_label }}">{{ form.algorithm.label }}:</label>
+          {{ form.algorithm }}
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.a12.id_for_label }}">{{ form.a12.label }}:</label>
+          {{ form.a12 }}
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.a21.id_for_label }}">{{ form.a21.label }}:</label>
+          {{ form.a21 }}
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.iterations.id_for_label }}">{{ form.iterations.label }}:</label>
+          {{ form.iterations }}
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.exec_time.id_for_label }}">{{ form.exec_time.label }}:</label>
+          {{ form.exec_time }}
+        </div>
+
+        <div class="cp-form-group">
+          <label for="{{ form.average_error.id_for_label }}">{{ form.average_error.label }}:</label>
+          {{ form.average_error }}
+        </div>
+
+        <!-- Загрузка изображения -->
         <div class="cp-form-group cp-file-upload">
           <label for="{{ form.image.id_for_label }}">{{ form.image.label }}:</label>
           <div class="cp-file-input-wrapper">
@@ -48,10 +85,13 @@
             <input type="file" id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" accept="image/*" />
           </div>
           <div class="cp-image-preview">
-            <img id="image-preview-{{ form.image.id_for_label }}" alt="Предпросмотр изображения" {% if post.image %}src="{{ post.image.url }}"{% else %}style="display: none;"{% endif %} />
+            <img id="image-preview-{{ form.image.id_for_label }}" alt="Предпросмотр изображения"
+                 {% if post.image %}src="{{ post.image.url }}"{% else %}style="display: none;"{% endif %} />
           </div>
         </div>
       </div>
+
+      <!-- Кнопки -->
       <div class="cp-btn-group" style="display: flex; gap: 10px; justify-content: center;">
         <a href="{% url 'forum_detail' post_id=post.id %}" class="cp-btn cp-btn-secondary">
           <i class="fas fa-times"></i> Отмена
@@ -63,6 +103,9 @@
     </form>
   </div>
 </section>
+
+{{ block.super }}
+{% endblock %}
 
 <style>
   :root {
@@ -452,4 +495,3 @@
     });
   });
 </script>
-{% endblock %}
