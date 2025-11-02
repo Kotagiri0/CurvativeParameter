@@ -724,8 +724,13 @@ def calculations(request):
 
             return JsonResponse(response_data)
         except Exception as e:
-            print(traceback.format_exc())  # Логирование ошибки
-            return JsonResponse({'error': str(e)}, status=500)
+            import traceback
+            print(traceback.format_exc())  # Логирование в консоль
+            # Возвращаем флаг reload, чтобы фронтенд понял, что нужно обновить страницу
+            return JsonResponse({
+                'error': f'Что-то пошло не так. Возможно, таблица была удалена. ({str(e)})',
+                'reload': True
+            }, status=500)
 
     return render(request, 'calculations.html', context)
 
