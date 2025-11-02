@@ -311,10 +311,12 @@ def graph_view(request):
     if result_id:
         try:
             result = CalculationResult.objects.get(id=result_id)
+            # ✅ Проверяем, есть ли таблица
+            table_choice = str(result.table.id) if result.table else None
             initial_data = {
-                'table_choice': str(result.table.id),
-                'parameter_a': round(result.param_a, 3),
-                'parameter_b': round(result.param_b, 3),
+                'table_choice': table_choice,
+                'parameter_a': round(result.param_a, 3) if result.param_a is not None else '',
+                'parameter_b': round(result.param_b, 3) if result.param_b is not None else '',
             }
         except CalculationResult.DoesNotExist:
             result = None
@@ -328,7 +330,6 @@ def graph_view(request):
 
     form = GraphForm(request.POST or None, initial=initial_data)
     context = {'form': form}
-
     is_post = False
 
     if request.method == 'POST' and form.is_valid():
@@ -403,7 +404,6 @@ def graph_view(request):
             'table_data': table_data
         })
 
-    # ✅ Передаём старые параметры только если НЕ POST
     if not is_post and param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
