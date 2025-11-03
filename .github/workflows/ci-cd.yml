@@ -173,7 +173,6 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Login to Docker Hub
-      if: github.ref == 'refs/heads/prod'
       run: |
         if [ -n "${{ secrets.DOCKER_USERNAME }}" ]; then
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -182,6 +181,7 @@ jobs:
         fi
       shell: bash
       continue-on-error: true
+
 
     - name: Extract metadata
       id: meta
