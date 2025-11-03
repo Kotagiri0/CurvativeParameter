@@ -45,71 +45,96 @@
           <p><strong>Автор:</strong> {{ post.author.username }}</p>
           <p><strong>Дата:</strong> {{ post.created_at|date:"d.m.Y H:i" }}</p>
         </div>
+
         <!-- Секция описания -->
-        {% if post.content|extract_comment %}
-          <div class="cp-forum-description">
-            <p>{{ post.content|extract_comment|linebreaks }}</p>
-          </div>
+        {% if post.source == "forum" %}
+          <!-- Для постов с форума показываем content напрямую -->
+          {% if post.content %}
+            <div class="cp-forum-description">
+              <p>{{ post.content|truncatewords:30|linebreaks }}</p>
+            </div>
+          {% endif %}
+        {% else %}
+          <!-- Для постов из расчётов используем extract_comment -->
+          {% if post.content|extract_comment %}
+            <div class="cp-forum-description">
+              <p>{{ post.content|extract_comment|linebreaks }}</p>
+            </div>
+          {% endif %}
         {% endif %}
-       <!-- Секция результатов расчета -->
-<!-- Секция результатов расчета -->
-{% if post.calculation_result %}
-  <!-- Активный расчёт -->
-  <div class="cp-forum-preview">
-    <p><strong>Алгоритм:</strong> {{ post.calculation_result.algorithm|default:"Не указан" }}</p>
-    <p><strong>A<sub>12</sub>:</strong> {{ post.calculation_result.param_a|floatformat:3 }}</p>
-    <p><strong>A<sub>21</sub>:</strong> {{ post.calculation_result.param_b|floatformat:3 }}</p>
-    <p><strong>Итераций:</strong> {{ post.calculation_result.iterations|default:"N/A" }}</p>
-    <p><strong>Время выполнения:</strong>
-      {% if post.calculation_result.exec_time %}
-        {{ post.calculation_result.exec_time|floatformat:2 }} сек
-      {% else %}
-        N/A
-      {% endif %}
-    </p>
-    <p><strong>Средняя погрешность:</strong>
-      {% if post.calculation_result.average_op %}
-        {{ post.calculation_result.average_op|floatformat:1 }}%
-      {% else %}
-        N/A
-      {% endif %}
-    </p>
-  </div>
 
-{% elif post.source == "calculation" and post.calculation_snapshot %}
-  <!-- Удалён расчёт, но есть snapshot -->
-  <div class="cp-forum-preview">
-    <p><strong>Алгоритм:</strong> {{ post.calculation_snapshot.algorithm|default:post.algorithm|default:"Не указан" }}</p>
-    <p><strong>A<sub>12</sub>:</strong> {{ post.calculation_snapshot.param_a|default:post.a12|default:"N/A" }}</p>
-    <p><strong>A<sub>21</sub>:</strong> {{ post.calculation_snapshot.param_b|default:post.a21|default:"N/A" }}</p>
-    <p><strong>Итераций:</strong> {{ post.calculation_snapshot.iterations|default:post.iterations|default:"N/A" }}</p>
-    <p><strong>Время выполнения:</strong>
-      {% if post.calculation_snapshot.exec_time %}
-        {{ post.calculation_snapshot.exec_time|floatformat:2 }} сек
-      {% else %}
-        {{ post.exec_time|default:"N/A" }}
-      {% endif %}
-    </p>
-    <p><strong>Средняя погрешность:</strong>
-      {% if post.calculation_snapshot.average_op %}
-        {{ post.calculation_snapshot.average_op|floatformat:1 }}%
-      {% else %}
-        {{ post.average_error|default:"N/A" }}
-      {% endif %}
-    </p>
-  </div>
+        <!-- Секция результатов расчета -->
+        {% if post.calculation_result %}
+          <!-- Активный расчёт -->
+          <div class="cp-forum-preview">
+            <p><strong>Алгоритм:</strong> {{ post.calculation_result.algorithm|default:"Не указан" }}</p>
+            <p><strong>A<sub>12</sub>:</strong> {{ post.calculation_result.param_a|floatformat:3 }}</p>
+            <p><strong>A<sub>21</sub>:</strong> {{ post.calculation_result.param_b|floatformat:3 }}</p>
+            <p><strong>Итераций:</strong> {{ post.calculation_result.iterations|default:"N/A" }}</p>
+            <p><strong>Время выполнения:</strong>
+              {% if post.calculation_result.exec_time %}
+                {{ post.calculation_result.exec_time|floatformat:2 }} сек
+              {% else %}
+                N/A
+              {% endif %}
+            </p>
+            <p><strong>Средняя погрешность:</strong>
+              {% if post.calculation_result.average_op %}
+                {{ post.calculation_result.average_op|floatformat:1 }}%
+              {% else %}
+                N/A
+              {% endif %}
+            </p>
+          </div>
 
-{% elif post.source == "forum" %}
-  <!-- Обычный форумный пост -->
-  <div class="cp-forum-preview">
-    <p><strong>Алгоритм:</strong> {{ post.algorithm|default:"Не указан" }}</p>
-    <p><strong>A<sub>12</sub>:</strong> {{ post.a12|default:"N/A" }}</p>
-    <p><strong>A<sub>21</sub>:</strong> {{ post.a21|default:"N/A" }}</p>
-    <p><strong>Итераций:</strong> {{ post.iterations|default:"N/A" }}</p>
-    <p><strong>Время выполнения:</strong> {{ post.exec_time|default:"N/A" }}</p>
-    <p><strong>Средняя погрешность:</strong> {{ post.average_error|default:"N/A" }}</p>
-  </div>
-{% endif %}
+        {% elif post.source == "calculation" and post.calculation_snapshot %}
+          <!-- Удалён расчёт, но есть snapshot -->
+          <div class="cp-forum-preview">
+            <p><strong>Алгоритм:</strong> {{ post.calculation_snapshot.algorithm|default:post.algorithm|default:"Не указан" }}</p>
+            <p><strong>A<sub>12</sub>:</strong> {{ post.calculation_snapshot.param_a|default:post.a12|default:"N/A" }}</p>
+            <p><strong>A<sub>21</sub>:</strong> {{ post.calculation_snapshot.param_b|default:post.a21|default:"N/A" }}</p>
+            <p><strong>Итераций:</strong> {{ post.calculation_snapshot.iterations|default:post.iterations|default:"N/A" }}</p>
+            <p><strong>Время выполнения:</strong>
+              {% if post.calculation_snapshot.exec_time %}
+                {{ post.calculation_snapshot.exec_time|floatformat:2 }} сек
+              {% else %}
+                {{ post.exec_time|default:"N/A" }}
+              {% endif %}
+            </p>
+            <p><strong>Средняя погрешность:</strong>
+              {% if post.calculation_snapshot.average_op %}
+                {{ post.calculation_snapshot.average_op|floatformat:1 }}%
+              {% else %}
+                {{ post.average_error|default:"N/A" }}
+              {% endif %}
+            </p>
+          </div>
+
+        {% elif post.source == "forum" %}
+          <!-- Обычный форумный пост - показываем технические параметры только если они заполнены -->
+          {% if post.algorithm or post.a12 or post.a21 or post.iterations or post.exec_time or post.average_error %}
+            <div class="cp-forum-preview">
+              {% if post.algorithm %}
+                <p><strong>Алгоритм:</strong> {{ post.algorithm }}</p>
+              {% endif %}
+              {% if post.a12 %}
+                <p><strong>A<sub>12</sub>:</strong> {{ post.a12 }}</p>
+              {% endif %}
+              {% if post.a21 %}
+                <p><strong>A<sub>21</sub>:</strong> {{ post.a21 }}</p>
+              {% endif %}
+              {% if post.iterations %}
+                <p><strong>Итераций:</strong> {{ post.iterations }}</p>
+              {% endif %}
+              {% if post.exec_time %}
+                <p><strong>Время выполнения:</strong> {{ post.exec_time }}</p>
+              {% endif %}
+              {% if post.average_error %}
+                <p><strong>Средняя погрешность:</strong> {{ post.average_error }}</p>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endif %}
 
         <!-- Секция изображения -->
         {% if post.image %}
@@ -357,6 +382,11 @@
     border-top: 1px solid var(--border-color);
     padding-top: 10px;
     transition: color 0.3s ease, border-color 0.3s ease;
+  }
+
+  .cp-forum-description p {
+    margin: 5px 0;
+    word-wrap: break-word;
   }
 
   .cp-forum-preview {
