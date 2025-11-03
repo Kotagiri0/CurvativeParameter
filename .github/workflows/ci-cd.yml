@@ -89,17 +89,25 @@ jobs:
         pip install -r requirements.txt
         pip install coverage pytest pytest-django pytest-cov
 
-    - name: Create .env file
+    - name: Create .env file for testing
       run: |
-        echo "SECRET_KEY=test-secret-key-for-ci-cd-pipeline" > .env
-        echo "DEBUG=1" >> .env
+        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
+        echo "DEBUG=${{ secrets.DEBUG }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+        echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> .env
+        echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
+        echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
+        echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
+        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+        echo "DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }}" >> .env
+        echo "DJANGO_SUPERUSER_EMAIL=${{ secrets.DJANGO_SUPERUSER_EMAIL }}" >> .env
+        echo "DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}" >> .env
         echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
-        echo "CLOUDINARY_URL=cloudinary://test:test@test" >> .env
-        echo "DB_NAME=test_db" >> .env
-        echo "DB_USER=test_user" >> .env
-        echo "DB_PASSWORD=test_password" >> .env
-        echo "DB_HOST=localhost" >> .env
-        echo "DB_PORT=5432" >> .env
 
     - name: Run migrations
       run: python manage.py migrate --noinput
@@ -182,7 +190,6 @@ jobs:
       shell: bash
       continue-on-error: true
 
-
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -218,8 +225,27 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Create .env file from secrets
+      run: |
+        echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
+        echo "DEBUG=${{ secrets.DEBUG }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+        echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> .env
+        echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
+        echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
+        echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
+        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+        echo "DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }}" >> .env
+        echo "DJANGO_SUPERUSER_EMAIL=${{ secrets.DJANGO_SUPERUSER_EMAIL }}" >> .env
+        echo "DJANGO_SUPERUSER_PASSWORD=${{ secrets.DJANGO_SUPERUSER_PASSWORD }}" >> .env
+        echo "ALLOWED_HOSTS=your-domain.com,localhost" >> .env
+
     - name: Deploy via SSH
-      if: github.ref == 'refs/heads/prod'
       run: |
         if [ -n "${{ secrets.DEPLOY_HOST }}" ]; then
           echo "🚀 Starting deploy..."
