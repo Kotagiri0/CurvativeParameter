@@ -1,0 +1,87 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Получаем предыдущий тег
+        PREV_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+        
+        if [ -z "$PREV_TAG" ]; then
+          # Если это первый тег, берем все коммиты
+          CHANGELOG=$(git log --pretty=format:"- %s (%an)" --no-merges)
+        else
+          # Иначе берем коммиты между тегами
+          CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%an)" --no-merges)
+        fi
+        
+        # Сохраняем changelog в файл
+        echo "$CHANGELOG" > changelog.txt
+        
+        # Сохраняем в output для использования в следующих шагах
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## 🚀 Release ${{ steps.get_version.outputs.VERSION }}
+          
+          ### 📝 Changes in this Release
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### 📦 Installation
+          ```bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd ${{ github.event.repository.name }}
+          git checkout ${{ steps.get_version.outputs.VERSION }}
+          pip install -r requirements.txt
+          python manage.py migrate
+          ```
+          
+          ### 🐳 Docker
+          ```bash
+          docker pull ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.get_version.outputs.VERSION }}
+          ```
+          
+          ### 📚 Documentation
+          See [CI_CD_SETUP.md](CI_CD_SETUP.md) for detailed setup instructions.
+        draft: false
+        prerelease: false
+
+    - name: Build and Push Docker Image with Tag
+      if: secrets.DOCKER_USERNAME != ''
+      run: |
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.get_version.outputs.VERSION }} .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:${{ steps.get_version.outputs.VERSION }}
+        docker push ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}:latest
+      continue-on-error: true
