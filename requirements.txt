@@ -3,14 +3,16 @@
 # ========================
 Django==5.2.2
 gunicorn==23.0.0
-whitenoise==6.6.0  # Для статических файлов
-dj-database-url==2.1.0  # Добавлено для работы с Render
-python-dotenv==1.0.0  # Для работы с .env файлами
+whitenoise==6.6.0          # Для статических файлов (Render)
+dj-database-url==2.1.0     # Поддержка подключения к БД через URL (Render)
+python-dotenv==1.0.0       # Работа с .env
+python-decouple==3.8       # Альтернатива dotenv
 
 # ========================
 # Аутентификация и авторизация
 # ========================
-django-allauth==0.63.3 # Для Google авторизации
+django-allauth==0.63.3     # Google/соц. авторизация
+social-auth-app-django==5.4.1
 
 # ========================
 # Научные и графические библиотеки
@@ -31,9 +33,12 @@ cloudinary==1.41.0
 django-cloudinary-storage==0.3.0
 
 # ========================
+# Метрики и мониторинг
+# ========================
+django-prometheus==2.3.1   # Мониторинг и метрики (Prometheus)
+
+# ========================
 # Поддержка PostgreSQL
 # ========================
 psycopg2-binary==2.9.9
 dnspython>=2.6.1
-social-auth-app-django
-python-decouple

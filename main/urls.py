@@ -21,6 +21,7 @@ from main.views import (
     forum_create,
     forum_delete,
     forum_edit,
+download_graph
 )
 
 urlpatterns = [
@@ -29,6 +30,8 @@ urlpatterns = [
     path('login/', login_user, name='login'),
     path('logout/', logout_user, name='logout'),
     path('databases/', databases, name='databases'),
+    path('download_graph/', download_graph, name='download_graph'),
+
     path('profile/', profile, name='profile'),
     path('profile/update/', update_profile, name='update_profile'),
     path('profile/delete_result/<int:result_id>/', delete_result, name='delete_result'),

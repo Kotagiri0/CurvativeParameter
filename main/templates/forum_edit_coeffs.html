@@ -1,34 +1,52 @@
 {% extends 'base.html' %}
+{% load string_filters %}
 
-{% block title %}
-  {% if result %}Поделиться результатом{% else %}Создать пост{% endif %}
-{% endblock %}
+{% block title %}Редактировать пост — {{ post.title }}{% endblock %}
 
 {% block content %}
 <section class="cp-section">
   <div class="cp-header">
+    <div class="cp-header-left">
+      <a href="{% url 'forum_detail' post.id %}" class="cp-back-button">
+        <svg class="cp-back-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+        <span>Назад к посту</span>
+      </a>
+    </div>
     <h2>
-      <i class="fas fa-plus"></i>
-      {% if result %}Поделиться результатом расчета{% else %}Создать пост{% endif %}
+      <i class="fas fa-pencil-alt"></i>
+      Редактировать пост
     </h2>
+    <div class="cp-meta">
+      <p><strong>Автор:</strong> {{ post.author.username }}</p>
+      <p><strong>Создан:</strong> {{ post.created_at|date:"d.m.Y H:i" }}</p>
+      <span class="cp-badge cp-badge-forum">📝 Создан на форуме</span>
+    </div>
   </div>
 
   <div class="cp-graph-card">
     <form method="POST" class="cp-form" enctype="multipart/form-data">
       {% csrf_token %}
+
+      <!-- Ошибки формы -->
+      {% if form.errors %}
+        <div class="cp-form-errors">
+          {% for field in form %}
+            {% for error in field.errors %}
+              <p class="cp-error">{{ field.label }}: {{ error }}</p>
+            {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <p class="cp-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       <div class="cp-form-content">
-        {% if form.errors %}
-          <div class="cp-form-errors">
-            {% for field in form %}
-              {% for error in field.errors %}
-                <p class="cp-error">{{ field.label }}: {{ error }}</p>
-              {% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}
-              <p class="cp-error">{{ error }}</p>
-            {% endfor %}
-          </div>
-        {% endif %}
+        <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--accent-color);">
+          📝 Основная информация
+        </h3>
 
         <div class="cp-form-group">
           <label for="{{ form.title.id_for_label }}">{{ form.title.label }}:</label>
@@ -43,19 +61,21 @@
         <div class="cp-form-group cp-file-upload">
           <label for="{{ form.image.id_for_label }}">{{ form.image.label }}:</label>
           <div class="cp-file-input-wrapper">
-            <span class="cp-file-placeholder">Выберите изображение...</span>
-            <input type="file" id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" accept="image/*" />
+            <span class="cp-file-placeholder">
+              {% if post.image %}Текущее изображение{% else %}Выберите изображение...{% endif %}
+            </span>
+            {{ form.image }}
           </div>
           <div class="cp-image-preview">
-            <img id="image-preview-{{ form.image.id_for_label }}" alt="Предпросмотр изображения" style="display: none;" />
+            {% if post.image %}
+              <img id="image-preview" src="{{ post.image.url }}" alt="Превью">
+            {% else %}
+              <img id="image-preview" alt="Превью" style="display:none;">
+            {% endif %}
           </div>
         </div>
 
-        {% if result %}
-          <input type="hidden" name="calculation_result" value="{{ result.id }}" />
-        {% endif %}
-
-        <!-- 🔧 Технические параметры -->
+        <!-- Технические параметры -->
         <hr style="margin: 30px 0; border-color: var(--border-color);" />
         <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--accent-color);">
           🔧 Технические параметры (опционально)
@@ -94,29 +114,15 @@
           <label for="{{ form.average_error.id_for_label }}">{{ form.average_error.label }}:</label>
           {{ form.average_error }}
         </div>
-
-        <!-- 🏷️ Пометка об источнике -->
-        {% if not result %}
-        <div class="cp-source-badge">
-          <span class="cp-badge-info">
-            📝 Этот пост будет отмечен как <strong>"Создан на форуме"</strong>
-          </span>
-        </div>
-        {% else %}
-        <div class="cp-source-badge">
-          <span class="cp-badge-success">
-            📊 Этот пост будет отмечен как <strong>"Создан из расчёта"</strong>
-          </span>
-        </div>
-        {% endif %}
       </div>
 
-      <div class="cp-btn-group" style="display: flex; gap: 10px; justify-content: center;">
-        <a href="{% url 'forum_list' %}" class="cp-btn cp-btn-secondary">
+      <!-- Кнопки -->
+      <div class="cp-btn-group" style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+        <a href="{% url 'forum_detail' post.id %}" class="cp-btn cp-btn-secondary">
           <i class="fas fa-times"></i> Отмена
         </a>
         <button type="submit" class="cp-btn cp-btn-primary">
-          <i class="fas fa-save"></i> Опубликовать
+          <i class="fas fa-save"></i> Сохранить
         </button>
       </div>
     </form>
@@ -125,30 +131,33 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const fileInputs = document.querySelectorAll('.cp-file-input-wrapper input[type="file"]');
-    fileInputs.forEach(input => {
-      input.addEventListener('change', function() {
-        const placeholder = this.parentElement.querySelector('.cp-file-placeholder');
-        const preview = this.parentElement.parentElement.querySelector('.cp-image-preview img');
+    const fileInput = document.querySelector('.cp-file-input-wrapper input[type="file"]');
+    const placeholder = document.querySelector('.cp-file-placeholder');
+    const preview = document.getElementById('image-preview');
 
-        placeholder.textContent = this.files.length > 0 ? this.files[0].name : 'Выберите изображение...';
-
+    if (fileInput && placeholder && preview) {
+      fileInput.addEventListener('change', function() {
         if (this.files && this.files[0]) {
+          placeholder.textContent = this.files[0].name;
           const reader = new FileReader();
-          reader.onload = function(e) {
+          reader.onload = e => {
             preview.src = e.target.result;
             preview.style.display = 'block';
           };
           reader.readAsDataURL(this.files[0]);
         } else {
-          preview.src = '';
-          preview.style.display = 'none';
+          placeholder.textContent = 'Выберите изображение...';
+          {% if post.image %}
+            preview.src = '{{ post.image.url }}';
+            preview.style.display = 'block';
+          {% else %}
+            preview.style.display = 'none';
+          {% endif %}
         }
       });
-    });
+    }
   });
 </script>
-
 
 <style>
   .cp-section {
@@ -161,6 +170,39 @@
 
   .cp-header {
     margin-bottom: 30px;
+  }
+
+  .cp-header-left {
+    margin-bottom: 15px;
+  }
+
+  .cp-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+
+  .cp-back-button:hover {
+    background: var(--accent-color);
+    color: #ffffff;
+    border-color: var(--accent-color);
+    transform: translateX(-3px);
+  }
+
+  .cp-back-icon {
+    transition: transform 0.3s ease;
+  }
+
+  .cp-back-button:hover .cp-back-icon {
+    transform: translateX(-3px);
   }
 
   .cp-header h2 {
@@ -178,6 +220,40 @@
   .cp-header h2 i {
     color: var(--accent-color);
     transition: color 0.3s ease;
+  }
+
+  .cp-meta {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--text-color);
+  }
+
+  .cp-meta p {
+    margin: 0;
+  }
+
+  .cp-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .cp-badge-forum {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid #8b5cf6;
+  }
+
+  [data-theme="dark"] .cp-badge-forum {
+    background: rgba(167, 139, 250, 0.2);
+    color: #a78bfa;
+    border-color: #a78bfa;
   }
 
   .cp-graph-card {
@@ -203,7 +279,6 @@
   .cp-form-content {
     width: 100%;
     max-width: 600px;
-    margin-bottom: 20px;
   }
 
   .cp-form-errors {
@@ -248,7 +323,8 @@
 
   .cp-form-group input[type="text"],
   .cp-form-group input[type="number"],
-  .cp-form-group textarea {
+  .cp-form-group textarea,
+  .cp-form-group select {
     width: 100%;
     padding: 10px 12px;
     font-size: 0.95rem;
@@ -262,7 +338,8 @@
 
   .cp-form-group input[type="text"]:focus,
   .cp-form-group input[type="number"]:focus,
-  .cp-form-group textarea:focus {
+  .cp-form-group textarea:focus,
+  .cp-form-group select:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.9);
     outline: none;
@@ -270,7 +347,8 @@
 
   [data-theme="dark"] .cp-form-group input[type="text"]:focus,
   [data-theme="dark"] .cp-form-group input[type="number"]:focus,
-  [data-theme="dark"] .cp-form-group textarea:focus {
+  [data-theme="dark"] .cp-form-group textarea:focus,
+  [data-theme="dark"] .cp-form-group select:focus {
     background: rgba(50, 50, 50, 0.9);
   }
 
@@ -320,10 +398,6 @@
     cursor: pointer;
   }
 
-  .cp-file-input-wrapper input[type="file"]::-webkit-file-upload-button {
-    display: none;
-  }
-
   .cp-image-preview {
     margin-top: 10px;
     text-align: center;
@@ -339,47 +413,6 @@
 
   .cp-image-preview img:hover {
     transform: scale(1.05);
-  }
-
-  /* 👇 Стили для пометки источника */
-  .cp-source-badge {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 0.95rem;
-  }
-
-  .cp-badge-info {
-    display: inline-block;
-    padding: 10px 20px;
-    background: rgba(139, 92, 246, 0.15);
-    color: #8b5cf6;
-    border: 1px solid #8b5cf6;
-    border-radius: 8px;
-    font-weight: 500;
-  }
-
-  [data-theme="dark"] .cp-badge-info {
-    background: rgba(167, 139, 250, 0.2);
-    color: #a78bfa;
-    border-color: #a78bfa;
-  }
-
-  .cp-badge-success {
-    display: inline-block;
-    padding: 10px 20px;
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid #10b981;
-    border-radius: 8px;
-    font-weight: 500;
-  }
-
-  [data-theme="dark"] .cp-badge-success {
-    background: rgba(52, 211, 153, 0.2);
-    color: #34d399;
-    border-color: #34d399;
   }
 
   .cp-btn {
@@ -446,6 +479,12 @@
       font-size: 1.5rem;
     }
 
+    .cp-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
     .cp-form-row {
       flex-direction: column;
       gap: 0;
@@ -461,7 +500,8 @@
 
     .cp-form-group input[type="text"],
     .cp-form-group input[type="number"],
-    .cp-form-group textarea {
+    .cp-form-group textarea,
+    .cp-form-group select {
       font-size: 0.9rem;
       padding: 8px 10px;
     }
@@ -495,7 +535,8 @@
 
     .cp-form-group input[type="text"],
     .cp-form-group input[type="number"],
-    .cp-form-group textarea {
+    .cp-form-group textarea,
+    .cp-form-group select {
       font-size: 0.85rem;
       padding: 6px 8px;
     }

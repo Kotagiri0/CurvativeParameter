@@ -1,33 +1,26 @@
 import base64
 import json
-import math
 import traceback
 from datetime import time
-
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models.expressions import result
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from .forms import RegisterForm, LoginForm, GraphForm, UserUpdateForm, ProfileUpdateForm, PostForm
-from .models import Point, Table, CalculationResult, Profile, Post
-from django.http import JsonResponse
+from .forms import (
+    RegisterForm, LoginForm, GraphForm, UserUpdateForm,
+    ProfileUpdateForm, PostForm, CommentForm
+)
+from .models import Point, Table, CalculationResult, Profile, Post, Comment
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
-from .forms import LoginForm
-param_a, param_b = 0, 0
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Post, Comment
-from .forms import PostForm, CommentForm
 
+
+# === ФОРУМ ===
 @login_required
 def forum_list(request):
     query = request.GET.get('q', '')
@@ -42,16 +35,13 @@ def forum_list(request):
         posts = Post.objects.all().order_by('-created_at')
     return render(request, 'forum_list.html', {'posts': posts, 'query': query})
 
+
 @login_required
 def forum_detail(request, post_id):
-    """
-    Отображает пост (с форума или с графика) + его комментарии.
-    Позволяет добавлять новые комментарии.
-    """
     post = get_object_or_404(Post, id=post_id)
     calculation_result = getattr(post, 'calculation_result', None)
 
-    # Попробуем извлечь параметры из поста
+    # Парсинг данных таблицы из контента
     lines = post.content.split("\n")
     data_lines = []
     for line in lines:
@@ -64,27 +54,23 @@ def forum_detail(request, post_id):
                     gmod = parts[2].strip()
                     sigma = parts[3].strip().replace('%', '')
                     delta = parts[4].strip()
-
                     try:
-                        x2 = str(float(x2))[0:5] if x2 != 'N/A' else '0.000'
+                        x2 = str(float(x2))[:5] if x2 != 'N/A' else '0.000'
                         gexp = float(gexp) if gexp != 'N/A' else 0.0
                         gmod = float(gmod) if gmod != 'N/A' else 0.0
                         sigma = float(sigma) if sigma != 'N/A' else 0.0
                         delta = float(delta) if delta != 'N/A' else 0.0
                     except ValueError:
                         continue
-
                     data_lines.append({
-                        'x2': x2,
-                        'gexp': gexp,
-                        'gmod': gmod,
-                        'sigma': sigma,
-                        'delta': delta,
+                        'x2': x2, 'gexp': gexp, 'gmod': gmod,
+                        'sigma': sigma, 'delta': delta,
                     })
             except Exception as e:
                 print(f"Ошибка обработки строки: {line}, {e}")
 
-    # Извлечение данных о расчёте
+    # Извлечение метаданных
+    result_info = {}
     if calculation_result:
         result_info = {
             'param_a': calculation_result.param_a,
@@ -95,35 +81,29 @@ def forum_detail(request, post_id):
             'average_error': calculation_result.average_op,
         }
     else:
-        result_info = {}
         for line in lines:
             if line.startswith("Параметр A:"):
                 result_info['param_a'] = float(line.split(":")[1].strip())
             elif line.startswith("Параметр B:"):
                 result_info['param_b'] = float(line.split(":")[1].strip())
             elif line.startswith("Итерации:"):
-                try:
-                    result_info['iterations'] = int(line.split(":")[1].strip())
-                except:
-                    result_info['iterations'] = None
+                try: result_info['iterations'] = int(line.split(":")[1].strip())
+                except: result_info['iterations'] = None
             elif line.startswith("Время выполнения:"):
                 try:
                     time_str = line.split(":")[1].strip().replace(" сек", "")
                     result_info['exec_time'] = float(time_str)
-                except:
-                    result_info['exec_time'] = None
+                except: result_info['exec_time'] = None
             elif line.startswith("Алгоритм:"):
                 result_info['algorithm'] = line.split(":")[1].strip()
             elif line.startswith("Средняя погрешность:"):
                 try:
                     error_str = line.split(":")[1].strip().replace("%", "")
                     result_info['average_error'] = float(error_str)
-                except:
-                    result_info['average_error'] = None
+                except: result_info['average_error'] = None
 
-    # --- Работа с комментариями ---
+    # Комментарии
     comments = post.comments.all().order_by('-created_at')
-
     if request.method == 'POST':
         comment_form = CommentForm(request.POST)
         if comment_form.is_valid():
@@ -144,30 +124,36 @@ def forum_detail(request, post_id):
         'form': comment_form
     })
 
-# Создание нового поста
+
 @login_required
 def forum_create(request):
-    """
-    Создание поста на форуме вручную пользователем.
-    """
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
+            post.source = 'forum'
+            post.algorithm = form.cleaned_data.get('algorithm') or ''
+            post.a12 = form.cleaned_data.get('a12') or ''
+            post.a21 = form.cleaned_data.get('a21') or ''
+            post.iterations = form.cleaned_data.get('iterations') or ''
+            post.exec_time = form.cleaned_data.get('exec_time') or ''
+            post.average_error = form.cleaned_data.get('average_error') or ''
             post.save()
+            form.save_m2m()
             messages.success(request, "Пост успешно создан!")
             return redirect('forum_detail', post_id=post.id)
     else:
-        form = PostForm()
-
+        form = PostForm(user=request.user)
     return render(request, 'forum_create.html', {'form': form})
+
 
 @login_required
 def forum_delete(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if post.author == request.user and request.method == "POST":
         post.delete()
+        messages.success(request, "Пост успешно удалён.")
     return redirect('forum_list')
 
 
@@ -175,38 +161,76 @@ def forum_delete(request, pk):
 def forum_edit(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if post.author != request.user:
+        messages.error(request, "Вы не можете редактировать чужие посты.")
         return redirect('forum_list')
 
-    if request.method == "POST":
+    if request.method == 'POST':
         form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
         if form.is_valid():
-            form.save()
-            return redirect('forum_detail', post_id=post.pk)
+            post = form.save(commit=False)
+            post.author = request.user
+            post.algorithm = form.cleaned_data.get('algorithm') or post.algorithm or ''
+            post.a12 = form.cleaned_data.get('a12') or post.a12 or ''
+            post.a21 = form.cleaned_data.get('a21') or post.a21 or ''
+            post.iterations = form.cleaned_data.get('iterations') or post.iterations or ''
+            post.exec_time = form.cleaned_data.get('exec_time') or post.exec_time or ''
+            post.average_error = form.cleaned_data.get('average_error') or post.average_error or ''
+            post.save()
+            messages.success(request, "Пост успешно обновлён!")
+            return redirect('forum_detail', post_id=post.id)
     else:
-        form = PostForm(instance=post, user=request.user)
+        initial_data = {
+            'title': post.title,
+            'content': post.content,
+            'algorithm': post.algorithm or '',
+            'a12': post.a12 or '',
+            'a21': post.a21 or '',
+            'iterations': post.iterations or '',
+            'exec_time': post.exec_time or '',
+            'average_error': post.average_error or '',
+        }
+        if post.calculation_result:
+            initial_data['calculation_result'] = post.calculation_result.id
+        form = PostForm(instance=post, initial=initial_data, user=request.user)
 
-    return render(request, 'forum_edit.html', {'form': form, 'post': post})
+    template = 'forum_edit.html' if post.source == 'calculation' else 'forum_edit_coeffs.html'
+    return render(request, template, {'form': form, 'post': post})
+
 
 @login_required
 def share_calculation(request, result_id):
     result = get_object_or_404(CalculationResult, id=result_id)
-    print(f"CalculationResult #{result.id}:")
-    print(f"algorithm: {result.algorithm}")
-    print(f"average_op: {result.average_op}")
-    print(f"table_data: {result.table_data}")
-    print(f"get_table_data(): {result.get_table_data()}")
-
     if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
+        form = PostForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.calculation_result = result
+            post.source = 'calculation'
 
-            # Формируем содержимое поста с данными расчета
+            # Snapshot
+            post.calculation_snapshot = {
+                'param_a': result.param_a,
+                'param_b': result.param_b,
+                'iterations': result.iterations,
+                'exec_time': result.exec_time,
+                'algorithm': result.algorithm,
+                'average_op': result.average_op,
+                'table_data': result.get_table_data(),
+                'title': result.title,
+            }
+
+            # Заполнение технических полей
+            post.algorithm = result.algorithm or 'Не указан'
+            post.a12 = str(result.param_a) if result.param_a is not None else 'N/A'
+            post.a21 = str(result.param_b) if result.param_b is not None else 'N/A'
+            post.iterations = str(result.iterations) if result.iterations is not None else 'N/A'
+            post.exec_time = f"{result.exec_time:.2f} сек" if result.exec_time is not None else 'N/A'
+            post.average_error = f"{result.average_op:.1f}%" if result.average_op is not None else 'N/A'
+
+            # Формирование контента
             table_data = result.get_table_data()
             table_data_str = "Нет данных таблицы."
-
             if table_data:
                 try:
                     if isinstance(table_data, list):
@@ -219,81 +243,61 @@ def share_calculation(request, result_id):
                 except Exception as e:
                     table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
 
-            # Формируем пост content
             content_lines = [
                 f"Результат расчета #{result.id}:",
                 f"Название: {result.title}",
                 f"Параметр A: {result.param_a:.3f}",
                 f"Параметр B: {result.param_b:.3f}",
                 f"Итерации: {result.iterations if result.iterations is not None else 'N/A'}",
+                f"Время выполнения: {result.exec_time:.2f} сек" if result.exec_time else "Время выполнения: N/A",
+                f"Алгоритм: {result.algorithm or 'Не указан'}",
+                f"Средняя погрешность: {result.average_op:.1f}%" if result.average_op else "Средняя погрешность: N/A",
+                "Данные таблицы:",
+                table_data_str,
+                ""
             ]
-
-            if result.exec_time is not None:
-                content_lines.append(f"Время выполнения: {result.exec_time:.2f} сек")
-            else:
-                content_lines.append("Время выполнения: N/A")
-
-            content_lines.append(f"Алгоритм: {result.algorithm if result.algorithm else 'Не указан'}")
-
-            if result.average_op is not None:
-                content_lines.append(f"Средняя погрешность: {result.average_op:.1f}%")
-            else:
-                content_lines.append("Средняя погрешность: N/A")
-
-            content_lines.append("Данные таблицы:")
-            content_lines.append(table_data_str)
-            content_lines.append("")  # Пустая строка перед пользовательским комментарием
-
             user_content = form.cleaned_data['content'].strip()
-            if user_content:  # Добавляем комментарий только если он не пустой
+            if user_content:
                 content_lines.append(user_content)
-
             post.content = "\n".join(content_lines)
-
-            print(f"Post content:\n{post.content}")
             post.save()
             messages.success(request, 'Результат расчета успешно опубликован на форуме!')
             return redirect('forum_list')
     else:
-        table_data = result.get_table_data()
-        table_data_str = "Нет данных таблицы."
-        if table_data:
-            try:
-                if isinstance(table_data, list):
-                    table_data_str = "\n".join([
-                        f"{row.get('x2', 'N/A')},{row.get('gexp', 'N/A')},{row.get('gmod', 'N/A')},{row.get('sigma', 'N/A')},{row.get('delta', 'N/A')}"
-                        for row in table_data if isinstance(row, dict)
-                    ])
-                else:
-                    table_data_str = "Ошибка в данных таблицы"
-            except Exception as e:
-                table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
-
         initial_data = {
-            'title': f'Результат расчета #{result.id}',
-            'content': ""  # Пустое начальное значение
+            'title': f'Результат расчета: {result.title}',
+            'content': '',
+            'algorithm': result.algorithm or 'Не указан',
+            'a12': str(result.param_a) if result.param_a is not None else 'N/A',
+            'a21': str(result.param_b) if result.param_b is not None else 'N/A',
+            'iterations': str(result.iterations) if result.iterations is not None else 'N/A',
+            'exec_time': f"{result.exec_time:.2f}" if result.exec_time is not None else 'N/A',
+            'average_error': f"{result.average_op:.1f}" if result.average_op is not None else 'N/A',
         }
-        form = PostForm(initial=initial_data)
+        form = PostForm(initial=initial_data, user=request.user)
+    return render(request, 'forum_create.html', {
+        'form': form, 'result': result, 'is_from_calculation': True
+    })
 
-    return render(request, 'forum_create.html', {'form': form, 'result': result})
 
+# === ГРАФИК ===
 @login_required
 def graph_view(request):
-    # Достаём из сессии сохранённые данные
     result_id = request.session.get('result_id')
     table_id = request.session.get('table_id')
     param_a = request.session.get('param_a')
     param_b = request.session.get('param_b')
-
-    # Начальные данные для формы
     initial_data = {}
+    result = None
+
     if result_id:
         try:
             result = CalculationResult.objects.get(id=result_id)
+            table_choice = str(result.table.id) if result.table else None
             initial_data = {
-                'table_choice': str(result.table.id),
-                'parameter_a': round(result.param_a, 3),
-                'parameter_b': round(result.param_b, 3),
+                'table_choice': table_choice,
+                'parameter_a': round(result.param_a, 3) if result.param_a is not None else '',
+                'parameter_b': round(result.param_b, 3) if result.param_b is not None else '',
             }
         except CalculationResult.DoesNotExist:
             result = None
@@ -304,25 +308,22 @@ def graph_view(request):
             initial_data['parameter_a'] = round(param_a, 3)
         if param_b is not None:
             initial_data['parameter_b'] = round(param_b, 3)
-        result = None  # график без расчета
 
     form = GraphForm(request.POST or None, initial=initial_data)
     context = {'form': form}
+    is_post = False
 
     if request.method == 'POST' and form.is_valid():
-        # Получаем данные формы
+        is_post = True
         table_id = int(form.cleaned_data['table_choice'])
         table = Table.objects.get(id=table_id)
         parameter_a = float(form.cleaned_data['parameter_a'])
         parameter_b = float(form.cleaned_data['parameter_b'])
 
-        # Сохраняем параметры в сессию (для повторного использования)
         request.session['table_id'] = table_id
         request.session['param_a'] = parameter_a
         request.session['param_b'] = parameter_b
-        request.session.modified = True
 
-        # Готовим точки для построения
         new_x = np.linspace(0, 1, 1000)
         new_y = []
         xx, yy = [], []
@@ -336,7 +337,6 @@ def graph_view(request):
             y_value = rt * x1 * point * (x1 * parameter_a + point * parameter_b)
             new_y.append(y_value)
 
-        # Рисуем график
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.plot(new_x, new_y, color='red', markersize=1)
         ax.scatter(xx, yy, color='blue')
@@ -352,7 +352,8 @@ def graph_view(request):
         buffer.close()
         plt.close(fig)
 
-        # Подготавливаем данные таблицы (чтобы показывать ошибки)
+        request.session['last_graph'] = graphic
+
         table_data = []
         for x, y_exp in zip(xx, yy):
             x1 = 1 - x
@@ -361,19 +362,14 @@ def graph_view(request):
             delta = abs(y_exp - y_mod)
             sigma = (delta / y_exp * 100) if y_exp != 0 else 0
             table_data.append({
-                "x2": x,
-                "gmod": y_mod,
-                "gexp": y_exp,
-                "sigma": sigma,
-                "delta": delta
+                "x2": x, "gmod": y_mod, "gexp": y_exp,
+                "sigma": sigma, "delta": delta
             })
 
-        # Если график связан с CalculationResult → сохраняем ID
         if result:
             request.session['result_id'] = result.id
             context.update({'result_id': result.id, 'graphic_result': result})
         else:
-            # График без расчётов → result_id не нужен
             request.session['result_id'] = None
 
         context.update({
@@ -383,38 +379,105 @@ def graph_view(request):
             'table_data': table_data
         })
 
-    # Добавляем параметры в контекст для отображения
-    if param_a is not None and param_b is not None:
+    if not is_post and param_a is not None and param_b is not None:
         context.update({'a': round(param_a, 3), 'b': round(param_b, 3)})
 
     return render(request, 'graphs.html', context)
 
+
+@login_required
+def download_graph(request):
+    image_base64 = request.session.get('last_graph')
+    if not image_base64:
+        messages.error(request, "Сначала постройте график!")
+        return redirect('graph_view')
+    image_data = base64.b64decode(image_base64)
+    response = HttpResponse(image_data, content_type='image/png')
+    response['Content-Disposition'] = 'attachment; filename="graph.png"'
+    return response
+
+
+# === БАЗЫ ДАННЫХ ===
 @login_required
 def databases(request):
     tables = Table.objects.all()
-    context = {"tables": tables}
-    return render(request, "databases.html", context)
+    return render(request, "databases.html", {"tables": tables})
 
+
+@login_required
+def delete_table(request, pk):
+    table = get_object_or_404(Table, pk=pk)
+    if table.author != request.user:
+        messages.error(request, "Вы не можете удалить таблицу, так как вы не являетесь её автором.")
+        return redirect("databases")
+
+    results = CalculationResult.objects.filter(table=table)
+    if results.exists():
+        points_data = [{"x2": p.x_value, "gexp": p.y_value} for p in table.points.all()]
+        for res in results:
+            if not res.table_data:
+                res.table_data = json.dumps(points_data)
+                res.save(update_fields=["table_data"])
+    table.delete()
+    messages.success(request, "Таблица удалена, но расчёты и посты сохранены.")
+    return redirect("databases")
+
+
+@login_required
+def create_table(request):
+    if request.method == 'POST':
+        data = request.POST.get('data')
+        rows = data.strip().split('\n')
+        temperature = float(rows[-1])
+        title = rows[0]
+        solution = rows[1]
+        table = Table.objects.create(
+            temperature=temperature, title=title, solution=solution, author=request.user
+        )
+        for row in rows[2:-1]:
+            x_value, y_value = map(float, row.split(';'))
+            point = Point.objects.create(x_value=x_value, y_value=y_value)
+            table.points.add(point)
+        return HttpResponseRedirect('/databases/')
+    return render(request, 'create_table.html')
+
+
+# === ПРОФИЛЬ И РАСЧЁТЫ ===
 @login_required
 def delete_result(request, result_id):
     result = get_object_or_404(CalculationResult, id=result_id)
+    if request.user != result.user:
+        messages.error(request, "Вы не можете удалить чужой расчёт.")
+        return redirect('profile')
 
-    if request.user == result.user:
-        result.delete()
-
+    related_posts = Post.objects.filter(calculation_result=result)
+    for post in related_posts:
+        if not post.calculation_snapshot:
+            post.calculation_snapshot = {
+                'param_a': result.param_a,
+                'param_b': result.param_b,
+                'iterations': result.iterations,
+                'exec_time': result.exec_time,
+                'algorithm': result.algorithm,
+                'average_op': result.average_op,
+                'table_data': result.get_table_data(),
+                'title': result.title,
+            }
+            post.save(update_fields=['calculation_snapshot'])
+    result.delete()
+    messages.success(request, "Расчёт удалён. Посты сохранены.")
     return redirect('profile')
 
 
 @login_required
 def profile(request):
-    context = {}
     Profile.objects.get_or_create(user=request.user)
     user_results = CalculationResult.objects.filter(user=request.user).order_by('-created_at')
+    context = {'user_results': user_results}
+
     if request.method == 'POST':
-        context['user_results'] = user_results
         user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
-
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -428,49 +491,36 @@ def profile(request):
         'user': request.user,
         'user_form': user_form,
         'profile_form': profile_form,
-        'user_results': user_results
     })
     return render(request, 'profile.html', context)
+
 
 @login_required
 def update_profile(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
-        avatar = request.FILES.get('avatar')  # Получаем файл аватара из формы
-
+        avatar = request.FILES.get('avatar')
         user = request.user
 
-        # Проверка на уникальность имени пользователя
         if User.objects.exclude(pk=user.pk).filter(username=username).exists():
             messages.error(request, 'Имя пользователя уже занято.')
             return redirect('profile')
-
-        # Проверка на уникальность email
         if User.objects.exclude(pk=user.pk).filter(email=email).exists():
             messages.error(request, 'Электронная почта уже используется.')
             return redirect('profile')
 
-        try:
-            # Обновляем данные пользователя
-            user.username = username
-            user.email = email
-            user.save()
+        user.username = username
+        user.email = email
+        user.save()
 
-            # Обновляем или создаем профиль с аватаром
-            profile, created = Profile.objects.get_or_create(user=user)
-            if avatar:  # Если аватар был загружен
-                profile.avatar = avatar
-                profile.save()
-
-            messages.success(request, 'Профиль успешно обновлен.')
-        except ValueError as e:
-            messages.error(request, f'Ошибка при обновлении профиля: {str(e)}')
-
-        return redirect('profile')
-
-    # Если метод не POST, перенаправляем на страницу профиля
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if avatar:
+            profile.avatar = avatar
+            profile.save()
+        messages.success(request, 'Профиль успешно обновлен.')
     return redirect('profile')
+
 
 @login_required
 def calculations(request):
@@ -481,7 +531,7 @@ def calculations(request):
         try:
             algorithm = request.POST.get('algorithm')
             table_id = int(request.POST.get('tabledata')) - 1
-            table = tables[table_id]  # Получаем объект Table
+            table = tables[table_id]
             response_data = {
                 'algorithm': algorithm,
                 'iterations': 'N/A',
@@ -489,194 +539,75 @@ def calculations(request):
                 'table_data': []
             }
 
-            # Логика для каждого алгоритма
             if algorithm == 'gauss':
-                gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss.gauss(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод Гаусса',
-                    param_a=gauss_a,
-                    param_b=gauss_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'a': round(gauss_a, 3),
-                    'b': round(gauss_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
+                a, b, it, t, x2, gmod, gexp, op, ap, avg = gauss.gauss(tables, table_id)
+                key_a, key_b = 'a', 'b'
+                alg_name = 'Метод Гаусса'
             elif algorithm == 'gauss_step':
-                gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss_step.gauss_step(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод Гаусса с переменным шагом',
-                    param_a=gauss_step_a,
-                    param_b=gauss_step_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'c': round(gauss_step_a, 3),
-                    'd': round(gauss_step_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
+                a, b, it, t, x2, gmod, gexp, op, ap, avg = gauss_step.gauss_step(tables, table_id)
+                key_a, key_b = 'c', 'd'
+                alg_name = 'Метод Гаусса с переменным шагом'
             elif algorithm == 'gradient':
-                gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient.gradient(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод градиентного спуска',
-                    param_a=gradient_a,
-                    param_b=gradient_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'e': round(gradient_a, 3),
-                    'f': round(gradient_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
+                a, b, it, t, x2, gmod, gexp, op, ap, avg = gradient.gradient(tables, table_id)
+                key_a, key_b = 'e', 'f'
+                alg_name = 'Метод градиентного спуска'
             elif algorithm == 'gradient_step':
-                gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient_step.gradient_step(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
-
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод градиентного спуска с переменным шагом',
-                    param_a=gradient_step_a,
-                    param_b=gradient_step_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
-
-                response_data.update({
-                    'g': round(gradient_step_a, 3),
-                    'h': round(gradient_step_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
-
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
-
+                a, b, it, t, x2, gmod, gexp, op, ap, avg = gradient_step.gradient_step(tables, table_id)
+                key_a, key_b = 'g', 'h'
+                alg_name = 'Метод градиентного спуска с переменным шагом'
             elif algorithm == 'otzhig':
-                otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = otzhig.otzhig(tables, table_id)
-                table_data = [
-                    {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
-                    for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
-                ]
+                a, b, it, t, x2, gmod, gexp, op, ap, avg = otzhig.otzhig(tables, table_id)
+                key_a, key_b = 'i', 'j'
+                alg_name = 'Метод симуляции отжига'
+            else:
+                raise ValueError("Неизвестный алгоритм")
 
-                result = CalculationResult.objects.create(
-                    user=request.user,
-                    title=table.title,
-                    algorithm='Метод симуляции отжига',
-                    param_a=otzhig_a,
-                    param_b=otzhig_b,
-                    table=table,  # Передаем объект Table
-                    iterations=iterations or 0,
-                    average_op=avg_op,
-                    exec_time=exec_time,
-                    table_data=json.dumps(table_data)  # Сериализуем в JSON
-                )
+            table_data = [
+                {'x2': float(x), 'gmod': float(m), 'gexp': float(e), 'sigma': float(o), 'delta': float(d)}
+                for x, m, e, o, d in zip(x2, gmod, gexp, op, ap)
+            ]
 
-                response_data.update({
-                    'i': round(otzhig_a, 3),
-                    'j': round(otzhig_b, 3),
-                    'iterations': iterations or 'N/A',
-                    'exec_time': f"{exec_time:.3f} сек" if exec_time else 'N/A',
-                    'table_data': table_data,
-                    'result_id': result.id
-                })
+            result = CalculationResult.objects.create(
+                user=request.user,
+                title=table.title,
+                algorithm=alg_name,
+                param_a=a, param_b=b,
+                table=table,
+                iterations=it or 0,
+                average_op=avg,
+                exec_time=t,
+                table_data=json.dumps(table_data)
+            )
 
-                context.update({
-                    'result': result,  # Передаем результат в шаблон
-                    'table_data': table_data  # Передаем данные таблицы в шаблон
-                })
+            response_data.update({
+                key_a: round(a, 3), key_b: round(b, 3),
+                'iterations': it or 'N/A',
+                'exec_time': f"{t:.3f} сек" if t else 'N/A',
+                'table_data': table_data,
+                'result_id': result.id
+            })
 
-            # Сохранение в сессии
-            request.session['param_a'] = response_data.get('a') or response_data.get('c') or response_data.get('e') or response_data.get('g') or response_data.get('i')
-            request.session['param_b'] = response_data.get('b') or response_data.get('d') or response_data.get('f') or response_data.get('h') or response_data.get('j')
+            request.session['param_a'] = a
+            request.session['param_b'] = b
             request.session['result_id'] = result.id
             request.session['table_choice'] = table_id
             request.session.modified = True
 
+            context.update({'result': result, 'table_data': table_data})
             return JsonResponse(response_data)
+
         except Exception as e:
-            print(traceback.format_exc())  # Логирование ошибки
-            return JsonResponse({'error': str(e)}, status=500)
+            print(traceback.format_exc())
+            return JsonResponse({'error': f'Ошибка: {str(e)}', 'reload': True}, status=500)
 
     return render(request, 'calculations.html', context)
 
+
+# === АУТЕНТИФИКАЦИЯ ===
 @login_required
 def home_page(request):
     return render(request, 'index.html')
+
 
 def register(request):
     if request.method == 'POST':
@@ -689,57 +620,24 @@ def register(request):
         form = RegisterForm()
     return render(request, 'register.html', {'form': form})
 
+
 def login_user(request):
     if request.method == 'POST':
         form = LoginForm(data=request.POST)
         if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
+            user = authenticate(
+                username=form.cleaned_data['username'],
+                password=form.cleaned_data['password']
+            )
             if user is not None:
                 login(request, user)
-                print(f"User {user.username} вошёл в систему.")
                 return redirect('home')
-            else:
-                print("Аутентификация не прошла.")
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
 
 @login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
-
-
-
-@login_required
-def databases(request):
-    tables = Table.objects.all()
-    context = {"tables": tables}
-    return render(request, "databases.html", context)
-
-
-@login_required
-def delete_table(request, pk):
-    table = get_object_or_404(Table, pk=pk)
-    if request.method == 'GET':
-        table.delete()
-        return redirect('databases')
-    return redirect('databases')
-@login_required
-def create_table(request):
-    if request.method == 'POST':
-        data = request.POST.get('data')
-        rows = data.strip().split('\n')
-        temperature = float(rows[-1])
-        title = rows[0]
-        solution = rows[1]
-        table = Table.objects.create(temperature=temperature, title=title, solution=solution)
-        for row in rows[2:-1]:
-            x_value, y_value = map(float, row.split(';'))
-            point = Point.objects.create(x_value=x_value, y_value=y_value)
-            table.points.add(point)
-        return HttpResponseRedirect('/databases/')
-
-    return render(request, 'create_table.html')
