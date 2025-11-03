@@ -184,6 +184,7 @@ def forum_delete(request, pk):
 
 @login_required
 def forum_edit(request, pk):
+    """Редактирование всех постов с автоматическим выбором шаблона"""
     post = get_object_or_404(Post, pk=pk)
 
     if post.author != request.user:
@@ -195,13 +196,43 @@ def forum_edit(request, pk):
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
+
+            # Сохраняем технические поля (если были заполнены)
+            post.algorithm = form.cleaned_data.get('algorithm') or post.algorithm or ''
+            post.a12 = form.cleaned_data.get('a12') or post.a12 or ''
+            post.a21 = form.cleaned_data.get('a21') or post.a21 or ''
+            post.iterations = form.cleaned_data.get('iterations') or post.iterations or ''
+            post.exec_time = form.cleaned_data.get('exec_time') or post.exec_time or ''
+            post.average_error = form.cleaned_data.get('average_error') or post.average_error or ''
+
             post.save()
             messages.success(request, "Пост успешно обновлён!")
             return redirect('forum_detail', post_id=post.id)
     else:
-        form = PostForm(instance=post, user=request.user)
+        # Предзаполняем форму данными из поста
+        initial_data = {
+            'title': post.title,
+            'content': post.content,
+            'algorithm': post.algorithm or '',
+            'a12': post.a12 or '',
+            'a21': post.a21 or '',
+            'iterations': post.iterations or '',
+            'exec_time': post.exec_time or '',
+            'average_error': post.average_error or '',
+        }
 
-    return render(request, 'forum_edit.html', {'form': form, 'post': post})
+        if post.calculation_result:
+            initial_data['calculation_result'] = post.calculation_result.id
+
+        form = PostForm(instance=post, initial=initial_data, user=request.user)
+
+    # Выбираем шаблон в зависимости от источника поста
+    if post.source == 'calculation':
+        template = 'forum_edit.html'  # Для постов из расчётов
+    else:
+        template = 'forum_edit_coeffs.html'  # Для постов с форума
+
+    return render(request, template, {'form': form, 'post': post})
 
 
 
