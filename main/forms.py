@@ -64,15 +64,16 @@ class RegisterForm(UserCreationForm):
         })
     )
 
-    error_messages = {
-        'password_mismatch': ("Пароли не совпадают."),
-        'duplicate_username': ("Это имя пользователя уже занято. Выберите другое."),
-        'invalid_email': ("Введите действительный адрес электронной почты."),
-    }
-
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Эта электронная почта уже используется.")
+        return email
+
 
 
 class GraphForm(forms.Form):
@@ -89,6 +90,13 @@ class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
+            raise forms.ValidationError("Эта электронная почта уже используется.")
+        return email
+
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
