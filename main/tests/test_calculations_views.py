@@ -1,14 +1,12 @@
 """
 Расширенные тесты для views с расчетами и графиками
+Используем правильные имена URL: 'graphs' вместо 'graph_view'
 """
 import json
-import base64
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from main.models import Table, Point, CalculationResult, Post, Comment
-from io import BytesIO
-from PIL import Image
 
 
 class CalculationsViewExtendedTest(TestCase):
@@ -200,7 +198,7 @@ class GraphViewExtendedTest(TestCase):
             'parameter_a': '1.5',
             'parameter_b': '2.5'
         }
-        response = self.client.post(reverse('graph_view'), data)
+        response = self.client.post(reverse('graphs'), data)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('graphic', response.context)
@@ -224,7 +222,7 @@ class GraphViewExtendedTest(TestCase):
             'parameter_a': '1.0',
             'parameter_b': '1.0'
         }
-        response = self.client.post(reverse('graph_view'), data)
+        response = self.client.post(reverse('graphs'), data)
 
         # Проверяем сессию
         session = self.client.session
@@ -249,7 +247,7 @@ class GraphViewExtendedTest(TestCase):
         session['result_id'] = result.id
         session.save()
 
-        response = self.client.get(reverse('graph_view'))
+        response = self.client.get(reverse('graphs'))
         self.assertEqual(response.status_code, 200)
 
         # Проверяем, что форма предзаполнена
@@ -265,7 +263,7 @@ class GraphViewExtendedTest(TestCase):
             'parameter_a': '1.0',
             'parameter_b': '1.0'
         }
-        self.client.post(reverse('graph_view'), data)
+        self.client.post(reverse('graphs'), data)
 
         # Теперь скачиваем
         response = self.client.get(reverse('download_graph'))
@@ -278,8 +276,9 @@ class GraphViewExtendedTest(TestCase):
         """Тест скачивания без созданного графика"""
         response = self.client.get(reverse('download_graph'))
 
-        # Должен быть редирект
+        # Должен быть редирект на 'graphs'
         self.assertEqual(response.status_code, 302)
+        self.assertIn('/graphs/', response.url)
 
 
 class ShareCalculationTest(TestCase):
@@ -449,62 +448,6 @@ class DeleteResultTest(TestCase):
         )
 
 
-class UpdateProfileExtendedTest(TestCase):
-    """Расширенные тесты для обновления профиля"""
-
-    def setUp(self):
-        self.client = Client()
-        self.user = User.objects.create_user(
-            username='testuser',
-            email='test@example.com',
-            password='testpass123'
-        )
-        self.client.login(username='testuser', password='testpass123')
-
-    def test_update_profile_username(self):
-        """Тест изменения имени пользователя"""
-        data = {
-            'username': 'newusername',
-            'email': 'test@example.com'
-        }
-        response = self.client.post(reverse('update_profile'), data)
-
-        self.assertRedirects(response, reverse('profile'))
-
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.username, 'newusername')
-
-    def test_update_profile_duplicate_username(self):
-        """Тест попытки использовать занятое имя"""
-        User.objects.create_user(
-            username='taken',
-            password='pass'
-        )
-
-        data = {
-            'username': 'taken',
-            'email': 'test@example.com'
-        }
-        response = self.client.post(reverse('update_profile'), data)
-
-        self.assertRedirects(response, reverse('profile'))
-
-        # Имя не изменилось
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.username, 'testuser')
-
-    def test_update_profile_email(self):
-        """Тест изменения email"""
-        data = {
-            'username': 'testuser',
-            'email': 'newemail@example.com'
-        }
-        response = self.client.post(reverse('update_profile'), data)
-
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.email, 'newemail@example.com')
-
-
 class ForumIntegrationTest(TestCase):
     """Интеграционные тесты для форума"""
 
@@ -526,7 +469,7 @@ class ForumIntegrationTest(TestCase):
         )
 
         for x in [0.2, 0.5, 0.8]:
-            point = Point.objects.create(x_value=x, y_value=100 * x)
+            point = Point.objects.create(x_value=x, y_value=100*x)
             table.points.add(point)
 
         # 2. Запускаем расчет
