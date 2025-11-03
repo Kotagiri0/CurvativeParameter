@@ -157,127 +157,7 @@ def forum_delete(request, pk):
     return redirect('forum_list')
 
 
-@login_required
-def forum_edit(request, pk):
-    post = get_object_or_404(Post, pk=pk)
-    if post.author != request.user:
-        messages.error(request, "Вы не можете редактировать чужие посты.")
-        return redirect('forum_list')
 
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.algorithm = form.cleaned_data.get('algorithm') or post.algorithm or ''
-            post.a12 = form.cleaned_data.get('a12') or post.a12 or ''
-            post.a21 = form.cleaned_data.get('a21') or post.a21 or ''
-            post.iterations = form.cleaned_data.get('iterations') or post.iterations or ''
-            post.exec_time = form.cleaned_data.get('exec_time') or post.exec_time or ''
-            post.average_error = form.cleaned_data.get('average_error') or post.average_error or ''
-            post.save()
-            messages.success(request, "Пост успешно обновлён!")
-            return redirect('forum_detail', post_id=post.id)
-    else:
-        initial_data = {
-            'title': post.title,
-            'content': post.content,
-            'algorithm': post.algorithm or '',
-            'a12': post.a12 or '',
-            'a21': post.a21 or '',
-            'iterations': post.iterations or '',
-            'exec_time': post.exec_time or '',
-            'average_error': post.average_error or '',
-        }
-        if post.calculation_result:
-            initial_data['calculation_result'] = post.calculation_result.id
-        form = PostForm(instance=post, initial=initial_data, user=request.user)
-
-    template = 'forum_edit.html' if post.source == 'calculation' else 'forum_edit_coeffs.html'
-    return render(request, template, {'form': form, 'post': post})
-
-
-@login_required
-def share_calculation(request, result_id):
-    result = get_object_or_404(CalculationResult, id=result_id)
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, user=request.user)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.calculation_result = result
-            post.source = 'calculation'
-
-            # Snapshot
-            post.calculation_snapshot = {
-                'param_a': result.param_a,
-                'param_b': result.param_b,
-                'iterations': result.iterations,
-                'exec_time': result.exec_time,
-                'algorithm': result.algorithm,
-                'average_op': result.average_op,
-                'table_data': result.get_table_data(),
-                'title': result.title,
-            }
-
-            # Заполнение технических полей
-            post.algorithm = result.algorithm or 'Не указан'
-            post.a12 = str(result.param_a) if result.param_a is not None else 'N/A'
-            post.a21 = str(result.param_b) if result.param_b is not None else 'N/A'
-            post.iterations = str(result.iterations) if result.iterations is not None else 'N/A'
-            post.exec_time = f"{result.exec_time:.2f} сек" if result.exec_time is not None else 'N/A'
-            post.average_error = f"{result.average_op:.1f}%" if result.average_op is not None else 'N/A'
-
-            # Формирование контента
-            table_data = result.get_table_data()
-            table_data_str = "Нет данных таблицы."
-            if table_data:
-                try:
-                    if isinstance(table_data, list):
-                        table_data_str = "\n".join([
-                            f"{row.get('x2', 'N/A')},{row.get('gexp', 'N/A')},{row.get('gmod', 'N/A')},{row.get('sigma', 'N/A')},{row.get('delta', 'N/A')}"
-                            for row in table_data if isinstance(row, dict)
-                        ])
-                    else:
-                        table_data_str = "Ошибка в данных таблицы"
-                except Exception as e:
-                    table_data_str = f"Ошибка при обработке данных таблицы: {str(e)}"
-
-            content_lines = [
-                f"Результат расчета #{result.id}:",
-                f"Название: {result.title}",
-                f"Параметр A: {result.param_a:.3f}",
-                f"Параметр B: {result.param_b:.3f}",
-                f"Итерации: {result.iterations if result.iterations is not None else 'N/A'}",
-                f"Время выполнения: {result.exec_time:.2f} сек" if result.exec_time else "Время выполнения: N/A",
-                f"Алгоритм: {result.algorithm or 'Не указан'}",
-                f"Средняя погрешность: {result.average_op:.1f}%" if result.average_op else "Средняя погрешность: N/A",
-                "Данные таблицы:",
-                table_data_str,
-                ""
-            ]
-            user_content = form.cleaned_data['content'].strip()
-            if user_content:
-                content_lines.append(user_content)
-            post.content = "\n".join(content_lines)
-            post.save()
-            messages.success(request, 'Результат расчета успешно опубликован на форуме!')
-            return redirect('forum_list')
-    else:
-        initial_data = {
-            'title': f'Результат расчета: {result.title}',
-            'content': '',
-            'algorithm': result.algorithm or 'Не указан',
-            'a12': str(result.param_a) if result.param_a is not None else 'N/A',
-            'a21': str(result.param_b) if result.param_b is not None else 'N/A',
-            'iterations': str(result.iterations) if result.iterations is not None else 'N/A',
-            'exec_time': f"{result.exec_time:.2f}" if result.exec_time is not None else 'N/A',
-            'average_error': f"{result.average_op:.1f}" if result.average_op is not None else 'N/A',
-        }
-        form = PostForm(initial=initial_data, user=request.user)
-    return render(request, 'forum_create.html', {
-        'form': form, 'result': result, 'is_from_calculation': True
-    })
 
 
 # === ГРАФИК ===
@@ -442,7 +322,110 @@ def create_table(request):
     return render(request, 'create_table.html')
 
 
-# === ПРОФИЛЬ И РАСЧЁТЫ ===
+# === ФОРУМ ===
+@login_required
+def share_calculation(request, result_id):
+    result = get_object_or_404(CalculationResult, id=result_id)
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.calculation_result = result
+            post.source = 'calculation'
+
+            # Snapshot
+            post.calculation_snapshot = {
+                'param_a': result.param_a,
+                'param_b': result.param_b,
+                'iterations': result.iterations,
+                'exec_time': result.exec_time,
+                'algorithm': result.algorithm,
+                'average_op': result.average_op,
+                'table_data': result.get_table_data(),
+                'title': result.title,
+            }
+
+            # Заполнение технических полей
+            post.algorithm = result.algorithm or 'Не указан'
+            post.a12 = str(result.param_a) if result.param_a is not None else 'N/A'
+            post.a21 = str(result.param_b) if result.param_b is not None else 'N/A'
+            post.iterations = str(result.iterations) if result.iterations is not None else 'N/A'
+            post.exec_time = f"{result.exec_time:.2f} сек" if result.exec_time is not None else 'N/A'
+            post.average_error = f"{result.average_op:.1f}%" if result.average_op is not None else 'N/A'
+
+            # ВАЖНО: Сохраняем только пользовательский комментарий в content
+            user_content = form.cleaned_data['content'].strip()
+            post.content = user_content  # Только комментарий пользователя
+
+            post.save()
+            messages.success(request, 'Результат расчета успешно опубликован на форуме!')
+            return redirect('forum_list')
+    else:
+        initial_data = {
+            'title': f'Результат расчета: {result.title}',
+            'content': '',
+            'algorithm': result.algorithm or 'Не указан',
+            'a12': str(result.param_a) if result.param_a is not None else 'N/A',
+            'a21': str(result.param_b) if result.param_b is not None else 'N/A',
+            'iterations': str(result.iterations) if result.iterations is not None else 'N/A',
+            'exec_time': f"{result.exec_time:.2f}" if result.exec_time is not None else 'N/A',
+            'average_error': f"{result.average_op:.1f}" if result.average_op is not None else 'N/A',
+        }
+        form = PostForm(initial=initial_data, user=request.user)
+    return render(request, 'forum_create.html', {
+        'form': form, 'result': result, 'is_from_calculation': True
+    })
+
+
+@login_required
+def forum_edit(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if post.author != request.user:
+        messages.error(request, "Вы не можете редактировать чужие посты.")
+        return redirect('forum_list')
+
+    if request.method == 'POST':
+        form = PostForm(request.POST, request.FILES, instance=post, user=request.user)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+
+            # Для постов из расчётов - обновляем только content (описание)
+            if post.source == 'calculation':
+                post.content = form.cleaned_data['content'].strip()
+
+            # Обновление технических полей (если они были изменены)
+            post.algorithm = form.cleaned_data.get('algorithm') or post.algorithm or ''
+            post.a12 = form.cleaned_data.get('a12') or post.a12 or ''
+            post.a21 = form.cleaned_data.get('a21') or post.a21 or ''
+            post.iterations = form.cleaned_data.get('iterations') or post.iterations or ''
+            post.exec_time = form.cleaned_data.get('exec_time') or post.exec_time or ''
+            post.average_error = form.cleaned_data.get('average_error') or post.average_error or ''
+
+            post.save()
+            messages.success(request, "Пост успешно обновлён!")
+            return redirect('forum_detail', post_id=post.id)
+    else:
+        # Для редактирования постов из расчётов - показываем только content
+        initial_data = {
+            'title': post.title,
+            'content': post.content,  # Это уже чистый комментарий
+            'algorithm': post.algorithm or '',
+            'a12': post.a12 or '',
+            'a21': post.a21 or '',
+            'iterations': post.iterations or '',
+            'exec_time': post.exec_time or '',
+            'average_error': post.average_error or '',
+        }
+        if post.calculation_result:
+            initial_data['calculation_result'] = post.calculation_result.id
+        form = PostForm(instance=post, initial=initial_data, user=request.user)
+
+    template = 'forum_edit.html' if post.source == 'calculation' else 'forum_edit_coeffs.html'
+    return render(request, template, {'form': form, 'post': post})
+
+
 @login_required
 def delete_result(request, result_id):
     result = get_object_or_404(CalculationResult, id=result_id)
@@ -463,7 +446,9 @@ def delete_result(request, result_id):
                 'table_data': result.get_table_data(),
                 'title': result.title,
             }
+            # content уже содержит только пользовательский комментарий
             post.save(update_fields=['calculation_snapshot'])
+
     result.delete()
     messages.success(request, "Расчёт удалён. Посты сохранены.")
     return redirect('profile')

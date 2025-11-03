@@ -46,8 +46,8 @@
 
       <div class="cp-description-card">
         <h3>Описание</h3>
-        {% if post.content|extract_comment %}
-          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+        {% if post.content %}
+          <p class="cp-comment">{{ post.content|linebreaks }}</p>
         {% else %}
           <p class="cp-comment-placeholder">Нет описания</p>
         {% endif %}
@@ -114,8 +114,8 @@
 
       <div class="cp-description-card">
         <h3>Описание</h3>
-        {% if post.content|extract_comment %}
-          <p class="cp-comment">{{ post.content|extract_comment|linebreaks }}</p>
+        {% if post.content %}
+          <p class="cp-comment">{{ post.content|linebreaks }}</p>
         {% else %}
           <p class="cp-comment-placeholder">Нет описания</p>
         {% endif %}
@@ -207,7 +207,6 @@
       {% endif %}
     </div>
   {% endif %}
-
   <!-- 💬 Комментарии -->
   <div class="cp-comments-section">
     <h3>Комментарии ({{ comments.count }})</h3>
