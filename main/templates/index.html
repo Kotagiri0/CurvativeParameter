@@ -114,7 +114,7 @@
         </div>
         <div class="cp-flip-card-back">
           <p>Динамический шаг для негладких минимумов.</p>
-            <p><a href="https://pastebin.com/gnCemckK" target="_blank">https://pastebin.com/gnCemckK</a></p>
+            <p><a href="https://pastebin.com/RqLy9cAf" target="_blank">https://pastebin.com/RqLy9cAf</a></p>
 
         </div>
       </div>
@@ -132,7 +132,7 @@
         </div>
         <div class="cp-flip-card-back">
           <p>Стохастический поиск глобального минимума.</p>
-            <p><a href="https://pastebin.com/gnCemckK" target="_blank">https://pastebin.com/gnCemckK</a></p>
+            <p><a href="https://pastebin.com/zWQ3PzDg" target="_blank">https://pastebin.com/zWQ3PzDg</a></p>
 
         </div>
       </div>
@@ -340,6 +340,10 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     --tag-bg: rgba(65, 151, 222, 0.2);
     --tag-color: #4197DE;
     --shadow-color: rgba(0, 0, 0, 0.2);
+    --link-color-light: #0056b3; /* Более тёмный синий для светлой темы */
+    --link-hover-light: #003d80;
+    --link-color-dark: #84c1ff; /* Более яркий синий для тёмной темы */
+    --link-hover-dark: #a8d1ff;
   }
 
   [data-theme="dark"] {
@@ -576,6 +580,25 @@ gsap.from('.cp-graph-container', { opacity: 0, y: 20, duration: 1, ease: 'power2
     font-size: 0.95rem;
     line-height: 1.5;
     color: inherit !important;
+  }
+
+  /* ССЫЛКИ НА FLIP-КАРТОЧКАХ (back side) */
+  .cp-flip-card-back a {
+    color: var(--link-color-light) !important;
+    text-decoration: underline;
+    transition: color 0.3s ease;
+  }
+
+  .cp-flip-card-back a:hover {
+    color: var(--link-hover-light) !important;
+  }
+
+  [data-theme="dark"] .cp-flip-card-back a {
+    color: var(--link-color-dark) !important;
+  }
+
+  [data-theme="dark"] .cp-flip-card-back a:hover {
+    color: var(--link-hover-dark) !important;
   }
 
   .cp-method-card:hover .cp-flip-card-front,
