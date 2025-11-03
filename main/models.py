@@ -1,12 +1,11 @@
 import json
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from cloudinary_storage.storage import MediaCloudinaryStorage
 
 
-# ======== Таблицы и точки ========
-
+# Create your models here.
 class Point(models.Model):
     x_value = models.FloatField()
     y_value = models.FloatField()
@@ -14,12 +13,11 @@ class Point(models.Model):
     def __str__(self):
         return f"{self.x_value}, {self.y_value}"
 
-
 class Table(models.Model):
-    title = models.TextField(default="Untitled", verbose_name="Название таблицы")
-    solution = models.TextField(default="", verbose_name="Решение")
-    points = models.ManyToManyField(Point, related_name="tables", verbose_name="Точки")
-    temperature = models.FloatField(verbose_name="Температура")
+    title = models.TextField(default="Untitled")
+    solution = models.TextField(default="")
+    points = models.ManyToManyField(Point, related_name="tables")
+    temperature = models.FloatField()
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -32,35 +30,29 @@ class Table(models.Model):
     def __str__(self):
         return self.title
 
-    class Meta:
-        verbose_name = "Таблица"
-        verbose_name_plural = "Таблицы"
-
-
-# ======== Результаты расчётов ========
 
 class CalculationResult(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations", verbose_name="Пользователь")
-    title = models.CharField(max_length=200, default="Без названия", verbose_name="Название расчёта")
-    param_a = models.FloatField(verbose_name="Параметр A")
-    param_b = models.FloatField(verbose_name="Параметр B")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="calculations")
+    title = models.CharField(max_length=200, default="Без названия", verbose_name="Название расчета")
+    param_a = models.FloatField()
+    param_b = models.FloatField()
 
+    # не каскадное удаление!
     table = models.ForeignKey(
         'Table',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="results",
-        verbose_name="Таблица"
+        related_name="results"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    created_at = models.DateTimeField(auto_now_add=True)
     iterations = models.IntegerField(null=True, blank=True, verbose_name="Количество итераций")
     exec_time = models.FloatField(null=True, blank=True, verbose_name="Время выполнения (сек)")
     algorithm = models.CharField(max_length=100, null=True, blank=True, verbose_name="Алгоритм")
     average_op = models.FloatField(null=True, blank=True, verbose_name="Средняя относительная погрешность (%)")
 
-    # копия данных таблицы (JSON)
+    # сюда сохраняется копия данных таблицы
     table_data = models.TextField(null=True, blank=True, verbose_name="Данные таблицы")
 
     def get_table_data(self):
@@ -75,12 +67,9 @@ class CalculationResult(models.Model):
     def __str__(self):
         return f"Calculation #{self.id} by {self.user.username}"
 
-    class Meta:
-        verbose_name = "Результат расчёта"
-        verbose_name_plural = "Результаты расчётов"
 
 
-# ======== Профиль пользователя ========
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -94,12 +83,13 @@ class Profile(models.Model):
     def __str__(self):
         return f"Profile of {self.user.username}"
 
-    class Meta:
-        verbose_name = "Профиль"
-        verbose_name_plural = "Профили"
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
+from cloudinary_storage.storage import MediaCloudinaryStorage
+from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db import models
 
-# ======== Посты ========
 
 class Post(models.Model):
     SOURCE_CHOICES = [
@@ -127,15 +117,15 @@ class Post(models.Model):
         verbose_name="Результат расчёта"
     )
 
-    # Копия данных расчёта (для неизменности при удалении CalculationResult)
-    calculation_snapshot = models.JSONField(null=True, blank=True, verbose_name="Копия данных расчёта")
+    # 👇 Новое поле — snapshot (копия данных расчёта)
+    calculation_snapshot = models.JSONField(null=True, blank=True, verbose_name="Копия данных расчета")
 
     algorithm = models.CharField(max_length=100, blank=True, null=True, verbose_name="Алгоритм")
-    a12 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A₁₂")
-    a21 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A₂₁")
+    a12 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A12")
+    a21 = models.CharField(max_length=50, blank=True, null=True, verbose_name="A21")
     iterations = models.CharField(max_length=50, blank=True, null=True, verbose_name="Итерации")
     exec_time = models.CharField(max_length=50, blank=True, null=True, verbose_name="Время выполнения")
-    average_error = models.CharField(max_length=50, blank=True, null=True, verbose_name="Средняя погрешность (%)")
+    average_error = models.CharField(max_length=50, blank=True, null=True, verbose_name="Средняя погрешность")
 
     source = models.CharField(
         max_length=20,
@@ -155,9 +145,6 @@ class Post(models.Model):
     def is_from_calculation(self):
         """Проверка, создан ли пост из расчёта."""
         return self.source == 'calculation'
-
-
-# ======== Комментарии ========
 
 class Comment(models.Model):
     post = models.ForeignKey(
