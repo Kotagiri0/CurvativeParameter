@@ -115,10 +115,10 @@ jobs:
             echo "❌ Missing RENDER_DEPLOY_HOOK_URL secret for environment 'production'"
             exit 1
           else
-            echo "✅ Render deploy hook found"
+            echo "✅ Render deploy hook found in environment 'production'"
           fi
 
-      - name: Create .env for prod
+      - name: Create .env for production
         run: |
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
           echo "DEBUG=False" >> .env
@@ -129,9 +129,22 @@ jobs:
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
           echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "✅ .env created for production"
 
       - name: Deploy to Render
-        run: curl -fsSL "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "🚀 Triggering Render deploy..."
+          if [ -z "$RENDER_HOOK" ]; then
+            echo "❌ RENDER_DEPLOY_HOOK_URL is empty or not accessible"
+            exit 1
+          fi
+          echo "✅ Render hook found. Deploying..."
+          curl -fsSL "$RENDER_HOOK" || {
+            echo "❌ Render deploy failed"
+            exit 1
+          }
 
   release:
     name: Tag Release
