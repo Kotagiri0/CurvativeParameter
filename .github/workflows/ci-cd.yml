@@ -2,9 +2,9 @@ name: Django CI + Deploy
 
 on:
   push:
-    branches: [ master, prod ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, prod ]
+    branches: [ master ]
 
 env:
   PYTHON_VERSION: '3.12'
