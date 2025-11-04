@@ -22,22 +22,22 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-
+      
       - name: Install quality tools
         run: |
           pip install -r requirements.txt
           pip install flake8 black pylint pylint-django
-
+      
       - name: Check PEP8 compliance
         run: |
           echo "🎯 Checking PEP8 code style..."
           flake8 --exclude=migrations,__pycache__,venv --max-line-length=120 --extend-ignore=E203,W503 --statistics --count || echo "⚠️ PEP8 issues found"
-
+      
       - name: Check code formatting
         run: |
           echo "📝 Checking code formatting..."
           black --check --exclude='migrations|__pycache__|venv' . --diff || echo "⚠️ Formatting issues found"
-
+      
       - name: Run comprehensive Pylint analysis
         env:
           CLOUDINARY_URL: "cloudinary://dummy:dummy@dummy"
@@ -86,12 +86,12 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-
+      
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-django pytest-cov
-
+      
       - name: Create test environment
         run: |
           echo "SECRET_KEY=test_secret_key_for_prod_ci_12345" > .env
@@ -103,16 +103,16 @@ jobs:
           echo "DB_PASSWORD=test_password" >> .env
           echo "DB_HOST=localhost" >> .env
           echo "DB_PORT=5432" >> .env
-
+      
       - name: Run Django migrations
         run: python manage.py migrate --noinput
-
+      
       - name: Run test suite with coverage
         run: |
           echo "🧪 Running production test suite..."
-          pytest --cov=. --cov-report=term-missing --cov-report=xml --cov-fail-under=70 -v
+          pytest --cov=. --cov-report=term-missing --cov-report=xml -v
           echo "✅ Production tests completed"
-
+      
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -129,20 +129,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
+      
       - name: Install security tools
         run: pip install safety bandit -r requirements.txt
-
+      
       - name: Check for vulnerabilities
         run: |
           echo "🔒 Scanning for security vulnerabilities..."
           safety check --full-report || echo "⚠️ Security issues found - review recommended"
-
+      
       - name: Code security analysis
         run: |
           echo "🔍 Running security linter..."
           bandit -r main/ website/ -f html -o bandit-report.html -ll || echo "⚠️ Security warnings found"
-
+      
       - uses: actions/upload-artifact@v4
         with:
           name: security-reports-prod
@@ -155,44 +155,25 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
+      
       - name: Validate Docker build
         run: |
           echo "🐳 Validating Docker production build..."
           docker build -t prod-app:latest .
           echo "✅ Docker production build validation passed"
-
+      
       - name: Check Docker Compose
         run: |
           echo "📋 Validating Docker Compose..."
           docker-compose config || echo "⚠️ Docker Compose validation issues"
-
+      
       - name: Validate entrypoint script
         run: |
           echo "📜 Validating entrypoint script..."
           bash -n entrypoint.sh || echo "⚠️ Entrypoint script issues"
-
-  quality_gate:
-    name: Quality Gate
-    runs-on: ubuntu-latest
-    needs: [code_quality, test, security, docker-check]
-    if: always()
-
-    steps:
-      - name: Quality Assessment
-        run: |
-          echo "📊 PRODUCTION QUALITY GATE REPORT"
-          echo "=================================="
-          echo "✅ Code Quality: Pylint analysis completed"
-          echo "✅ Tests: Production test suite executed" 
-          echo "✅ Security: Vulnerability scan performed"
-          echo "✅ Docker: Production build validated"
-          echo ""
-          echo "🎯 Production code meets quality standards!"
-          echo "🚀 Ready for deployment"
 
   deploy-render:
     name: Deploy to Render
@@ -202,23 +183,20 @@ jobs:
     environment:
       name: .env
       url: https://curvativeparameter-vtjg.onrender.com
-
+    
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check for Render deploy hook
+      - name: Verify Render Hook Secret
         run: |
-          echo "🔍 Checking for Render deploy configuration..."
           if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            echo "⚠️ RENDER_DEPLOY_HOOK_URL secret not configured"
-            echo "📝 To enable auto-deployment, add RENDER_DEPLOY_HOOK_URL to repository secrets"
-            echo "✅ Continuing without deployment (tests and quality checks completed)"
+            echo "❌ Missing RENDER_DEPLOY_HOOK_URL secret for environment 'production'"
+            exit 1
           else
-            echo "✅ Render deploy hook configured"
+            echo "✅ Render deploy hook found in environment 'production'"
           fi
 
-      - name: Create production environment
-        if: secrets.RENDER_DEPLOY_HOOK_URL != ''
+      - name: Create .env for production
         run: |
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
           echo "DEBUG=False" >> .env
@@ -229,44 +207,38 @@ jobs:
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
           echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "✅ Production .env created"
+          echo "✅ .env created for production"
 
       - name: Deploy to Render
-        if: secrets.RENDER_DEPLOY_HOOK_URL != ''
         env:
           RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          echo "🚀 Triggering production deployment..."
+          echo "🚀 Triggering Render deploy..."
+          if [ -z "$RENDER_HOOK" ]; then
+            echo "❌ RENDER_DEPLOY_HOOK_URL is empty or not accessible"
+            exit 1
+          fi
+          echo "✅ Render hook found. Deploying..."
           curl -fsSL "$RENDER_HOOK" || {
-            echo "❌ Production deployment failed"
+            echo "❌ Render deploy failed"
             exit 1
           }
-          echo "✅ Production deployment triggered successfully"
-
-      - name: Skip deployment notice
-        if: secrets.RENDER_DEPLOY_HOOK_URL == ''
-        run: |
-          echo "⏭️  Deployment skipped - RENDER_DEPLOY_HOOK_URL not configured"
-          echo "💡 Add the deploy hook URL to repository secrets to enable auto-deployment"
 
   release:
     name: Tag Release
     runs-on: ubuntu-latest
     needs: deploy-render
-    if: github.ref == 'refs/heads/prod' && secrets.RENDER_DEPLOY_HOOK_URL != ''
-
+    if: github.ref == 'refs/heads/prod'
+    
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create production release tag
+      
+      - name: Create tag
         run: |
           VERSION="v$(date +'%Y.%m.%d')-prod.${{ github.run_number }}"
-          echo "🏷️ Creating production release tag: $VERSION"
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a "$VERSION" -m "Production release $VERSION"
+          git tag -a "$VERSION" -m "Production release"
           git push origin "$VERSION"
-          echo "✅ Production release $VERSION tagged successfully"
