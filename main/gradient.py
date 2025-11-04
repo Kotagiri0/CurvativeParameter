@@ -1,6 +1,7 @@
 import time
 import numpy as np
 
+
 def func(params, x2, temperature):
     """
     Векторизованная модель: params = [a, b]

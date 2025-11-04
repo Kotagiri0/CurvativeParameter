@@ -9,6 +9,7 @@ from main.models import Table, Point, Post, Comment, CalculationResult, Profile
 
 import pytest
 
+
 class AuthenticationViewsTest(TestCase):
     """Тесты для views аутентификации"""
 
@@ -537,7 +538,7 @@ class CalculationsViewTest(TestCase):
 
         # Добавляем тестовые точки
         for x in [0.1, 0.3, 0.5]:
-            point = Point.objects.create(x_value=x, y_value=100*x)
+            point = Point.objects.create(x_value=x, y_value=100 * x)
             self.table.points.add(point)
 
         self.client.login(username='testuser', password='testpass123')
@@ -568,7 +569,7 @@ class GraphViewTest(TestCase):
         )
 
         for x in [0.2, 0.5, 0.8]:
-            point = Point.objects.create(x_value=x, y_value=100*x)
+            point = Point.objects.create(x_value=x, y_value=100 * x)
             self.table.points.add(point)
 
         self.client.login(username='testuser', password='testpass123')

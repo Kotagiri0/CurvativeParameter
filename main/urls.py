@@ -21,7 +21,7 @@ from main.views import (
     forum_create,
     forum_delete,
     forum_edit,
-download_graph
+    download_graph
 )
 
 urlpatterns = [

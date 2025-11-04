@@ -1,3 +1,4 @@
+from cloudinary_storage.storage import MediaCloudinaryStorage
 import json
 
 from django.contrib.auth.models import User
@@ -12,6 +13,7 @@ class Point(models.Model):
 
     def __str__(self):
         return f"{self.x_value}, {self.y_value}"
+
 
 class Table(models.Model):
     title = models.TextField(default="Untitled")
@@ -68,9 +70,6 @@ class CalculationResult(models.Model):
         return f"Calculation #{self.id} by {self.user.username}"
 
 
-
-from cloudinary_storage.storage import MediaCloudinaryStorage
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(
@@ -82,13 +81,6 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.username}"
-
-from cloudinary_storage.storage import MediaCloudinaryStorage
-
-from cloudinary_storage.storage import MediaCloudinaryStorage
-from django.utils import timezone
-from django.contrib.auth.models import User
-from django.db import models
 
 
 class Post(models.Model):
@@ -145,6 +137,7 @@ class Post(models.Model):
     def is_from_calculation(self):
         """Проверка, создан ли пост из расчёта."""
         return self.source == 'calculation'
+
 
 class Comment(models.Model):
     post = models.ForeignKey(

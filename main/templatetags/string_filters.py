@@ -2,6 +2,7 @@ from django import template
 
 register = template.Library()
 
+
 @register.filter
 def split(value, delimiter):
     """
@@ -11,6 +12,7 @@ def split(value, delimiter):
     if value is None:
         return []
     return value.split(delimiter)
+
 
 @register.filter
 def startswith(value, prefix):
@@ -22,6 +24,7 @@ def startswith(value, prefix):
         return False
     return value.startswith(prefix)
 
+
 @register.filter
 def strip(value):
     """
@@ -31,6 +34,7 @@ def strip(value):
     if value is None:
         return ""
     return str(value).strip()
+
 
 @register.filter
 def get_calculation_title(content):
@@ -48,6 +52,7 @@ def get_calculation_title(content):
             return title if title else "Без названия"
     return "Без названия"
 
+
 @register.filter
 def get_algorithm(content):
     """
@@ -63,6 +68,7 @@ def get_algorithm(content):
             value = line.replace("Алгоритм:", "").strip()
             return value if value else "Не указан"
     return "Не указан"
+
 
 @register.filter
 def get_param_a(content):
@@ -80,6 +86,7 @@ def get_param_a(content):
             return value if value else "N/A"
     return "N/A"
 
+
 @register.filter
 def get_param_b(content):
     """
@@ -95,6 +102,7 @@ def get_param_b(content):
             value = line.replace("Параметр B:", "").strip()
             return value if value else "N/A"
     return "N/A"
+
 
 @register.filter
 def get_iterations(content):
@@ -112,6 +120,7 @@ def get_iterations(content):
             return value if value else "N/A"
     return "N/A"
 
+
 @register.filter
 def get_execution_time(content):
     """
@@ -127,6 +136,7 @@ def get_execution_time(content):
             value = line.replace("Время выполнения:", "").strip()
             return value if value else "N/A"
     return "N/A"
+
 
 @register.filter
 def get_average_error(content):
@@ -171,6 +181,6 @@ def extract_comment(content):
             comment_lines.append(line)
 
     print("comm:", comment_lines)
-    if len(comment_lines)==2:
+    if len(comment_lines) == 2:
         comment_lines.pop(0)
     return "\n".join(comment_lines).strip() if comment_lines else ""

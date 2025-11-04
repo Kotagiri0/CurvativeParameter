@@ -1,6 +1,7 @@
 from django.contrib.auth.backends import BaseBackend
 from .models import CustomUser
 
+
 class PlainTextAuthBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:

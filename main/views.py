@@ -1,3 +1,6 @@
+from django.http import HttpResponse
+from .forms import PostForm, CommentForm
+from .models import Post, Comment
 import base64
 import json
 import math
@@ -22,11 +25,7 @@ from django.http import JsonResponse
 from . import gauss, gauss_step, gradient, gradient_step, otzhig
 from .forms import LoginForm
 param_a, param_b = 0, 0
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Post, Comment
-from .forms import PostForm, CommentForm
+
 
 @login_required
 def forum_list(request):
@@ -41,6 +40,7 @@ def forum_list(request):
     else:
         posts = Post.objects.all().order_by('-created_at')
     return render(request, 'forum_list.html', {'posts': posts, 'query': query})
+
 
 @login_required
 def forum_detail(request, post_id):
@@ -104,13 +104,13 @@ def forum_detail(request, post_id):
             elif line.startswith("Итерации:"):
                 try:
                     result_info['iterations'] = int(line.split(":")[1].strip())
-                except:
+                except BaseException:
                     result_info['iterations'] = None
             elif line.startswith("Время выполнения:"):
                 try:
                     time_str = line.split(":")[1].strip().replace(" сек", "")
                     result_info['exec_time'] = float(time_str)
-                except:
+                except BaseException:
                     result_info['exec_time'] = None
             elif line.startswith("Алгоритм:"):
                 result_info['algorithm'] = line.split(":")[1].strip()
@@ -118,7 +118,7 @@ def forum_detail(request, post_id):
                 try:
                     error_str = line.split(":")[1].strip().replace("%", "")
                     result_info['average_error'] = float(error_str)
-                except:
+                except BaseException:
                     result_info['average_error'] = None
 
     # --- Работа с комментариями ---
@@ -143,6 +143,7 @@ def forum_detail(request, post_id):
         'comments': comments,
         'form': comment_form
     })
+
 
 @login_required
 def forum_create(request):
@@ -170,7 +171,6 @@ def forum_create(request):
         form = PostForm(user=request.user)
 
     return render(request, 'forum_create.html', {'form': form})
-
 
 
 @login_required
@@ -233,7 +233,6 @@ def forum_edit(request, pk):
         template = 'forum_edit_coeffs.html'  # Для постов с форума
 
     return render(request, template, {'form': form, 'post': post})
-
 
 
 @login_required
@@ -441,12 +440,12 @@ def graph_view(request):
     return render(request, 'graphs.html', context)
 
 
-
 @login_required
 def databases(request):
     tables = Table.objects.all()
     context = {"tables": tables}
     return render(request, "databases.html", context)
+
 
 @login_required
 def delete_result(request, result_id):
@@ -478,7 +477,6 @@ def delete_result(request, result_id):
     return redirect('profile')
 
 
-
 @login_required
 def profile(request):
     context = {}
@@ -505,6 +503,7 @@ def profile(request):
         'user_results': user_results
     })
     return render(request, 'profile.html', context)
+
 
 @login_required
 def update_profile(request):
@@ -546,6 +545,7 @@ def update_profile(request):
     # Если метод не POST, перенаправляем на страницу профиля
     return redirect('profile')
 
+
 @login_required
 def calculations(request):
     tables = Table.objects.all()
@@ -565,7 +565,8 @@ def calculations(request):
 
             # Логика для каждого алгоритма
             if algorithm == 'gauss':
-                gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss.gauss(tables, table_id)
+                gauss_a, gauss_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss.gauss(
+                    tables, table_id)
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
@@ -599,7 +600,8 @@ def calculations(request):
                 })
 
             elif algorithm == 'gauss_step':
-                gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss_step.gauss_step(tables, table_id)
+                gauss_step_a, gauss_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gauss_step.gauss_step(
+                    tables, table_id)
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
@@ -633,7 +635,8 @@ def calculations(request):
                 })
 
             elif algorithm == 'gradient':
-                gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient.gradient(tables, table_id)
+                gradient_a, gradient_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient.gradient(
+                    tables, table_id)
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
@@ -667,7 +670,8 @@ def calculations(request):
                 })
 
             elif algorithm == 'gradient_step':
-                gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient_step.gradient_step(tables, table_id)
+                gradient_step_a, gradient_step_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = gradient_step.gradient_step(
+                    tables, table_id)
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
@@ -701,7 +705,8 @@ def calculations(request):
                 })
 
             elif algorithm == 'otzhig':
-                otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = otzhig.otzhig(tables, table_id)
+                otzhig_a, otzhig_b, iterations, exec_time, l_x2, l_gmod, l_gexp, l_op, l_ap, avg_op = otzhig.otzhig(
+                    tables, table_id)
                 table_data = [
                     {'x2': float(x2), 'gmod': float(gmod), 'gexp': float(gexp), 'sigma': float(op), 'delta': float(ap)}
                     for x2, gmod, gexp, op, ap in zip(l_x2, l_gmod, l_gexp, l_op, l_ap)
@@ -735,8 +740,10 @@ def calculations(request):
                 })
 
             # Сохранение в сессии
-            request.session['param_a'] = response_data.get('a') or response_data.get('c') or response_data.get('e') or response_data.get('g') or response_data.get('i')
-            request.session['param_b'] = response_data.get('b') or response_data.get('d') or response_data.get('f') or response_data.get('h') or response_data.get('j')
+            request.session['param_a'] = response_data.get('a') or response_data.get(
+                'c') or response_data.get('e') or response_data.get('g') or response_data.get('i')
+            request.session['param_b'] = response_data.get('b') or response_data.get(
+                'd') or response_data.get('f') or response_data.get('h') or response_data.get('j')
             request.session['result_id'] = result.id
             request.session['table_choice'] = table_id
             request.session.modified = True
@@ -753,9 +760,11 @@ def calculations(request):
 
     return render(request, 'calculations.html', context)
 
+
 @login_required
 def home_page(request):
     return render(request, 'index.html')
+
 
 def register(request):
     if request.method == 'POST':
@@ -767,6 +776,7 @@ def register(request):
     else:
         form = RegisterForm()
     return render(request, 'register.html', {'form': form})
+
 
 def login_user(request):
     if request.method == 'POST':
@@ -781,14 +791,13 @@ def login_user(request):
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form})
+
+
 @login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
 
-from django.http import HttpResponse
-import base64
-from io import BytesIO
 
 @login_required
 def download_graph(request):

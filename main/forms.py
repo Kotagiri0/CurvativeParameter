@@ -1,3 +1,4 @@
+from .models import Post, CalculationResult, Comment
 import json
 
 from django import forms
@@ -33,6 +34,7 @@ class LoginForm(AuthenticationForm):
     class Meta:
         model = User
         fields = ['username', 'password']
+
 
 class RegisterForm(UserCreationForm):
     username = forms.CharField(
@@ -75,7 +77,6 @@ class RegisterForm(UserCreationForm):
         return email
 
 
-
 class GraphForm(forms.Form):
     table_choice = forms.ChoiceField(label='Выберите таблицу', choices=[])
     parameter_a = forms.FloatField(label='Параметр A')
@@ -102,10 +103,6 @@ class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['avatar']
-
-
-from django import forms
-from .models import Post, CalculationResult, Comment
 
 
 class PostForm(forms.ModelForm):

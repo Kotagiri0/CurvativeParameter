@@ -10,6 +10,7 @@ from main.models import Table, Point, CalculationResult, Post, Comment
 
 import pytest
 
+
 class CalculationsViewExtendedTest(TestCase):
     """Расширенные тесты для страницы расчетов"""
 
@@ -471,7 +472,7 @@ class ForumIntegrationTest(TestCase):
         )
 
         for x in [0.2, 0.5, 0.8]:
-            point = Point.objects.create(x_value=x, y_value=100*x)
+            point = Point.objects.create(x_value=x, y_value=100 * x)
             table.points.add(point)
 
         # 2. Запускаем расчет
