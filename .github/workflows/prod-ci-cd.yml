@@ -15,44 +15,37 @@ jobs:
   lint:
     name: Code Quality Check
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 black pylint-django
-        pip install -r requirements.txt
-
-    - name: Run Flake8
-      run: flake8 --exclude=migrations,__pycache__,venv --max-line-length=120 --extend-ignore=E203,W503
-      continue-on-error: true
-
-    - name: Run Black check
-      run: black --check --exclude='migrations|__pycache__|venv' .
-      continue-on-error: true
-
-    - name: Run Pylint
-      run: |
-        pylint --load-plugins=pylint_django \
-               --django-settings-module=website.settings \
-               --disable=C0111,C0103,R0903,W0212,E1101 \
-               --ignore=migrations,__pycache__ \
-               main/ website/ || true
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black pylint-django
+          pip install -r requirements.txt
+      - name: Run Flake8
+        run: flake8 --exclude=migrations,__pycache__,venv --max-line-length=120 --extend-ignore=E203,W503
+        continue-on-error: true
+      - name: Run Black check
+        run: black --check --exclude='migrations|__pycache__|venv' .
+        continue-on-error: true
+      - name: Run Pylint
+        run: |
+          pylint --load-plugins=pylint_django \
+                 --django-settings-module=website.settings \
+                 --disable=C0111,C0103,R0903,W0212,E1101 \
+                 --ignore=migrations,__pycache__ \
+                 main/ website/ || true
 
   # Тестирование
   test:
     name: Run Tests
     runs-on: ubuntu-latest
     needs: lint
-
     services:
       postgres:
         image: postgres:16
@@ -67,338 +60,144 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install coverage
-
-    - name: Create .env file
-      run: |
-        echo "SECRET_KEY=test-secret-key-for-production-ci-cd" > .env
-        echo "DEBUG=1" >> .env
-        echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
-        echo "CLOUDINARY_URL=cloudinary://test:test@test" >> .env
-        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db" >> .env
-
-    - name: Run migrations
-      run: python manage.py migrate --noinput
-
-    - name: Run tests with coverage
-      run: |
-        coverage run --source='main','website' manage.py test --keepdb
-        coverage report -m
-        coverage xml
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: production
-        fail_ci_if_error: false
-      continue-on-error: true
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage pytest pytest-django pytest-cov
+      - name: Create .env file
+        run: |
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
+          echo "DEBUG=${{ secrets.DEBUG }}" >> .env
+          echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
+          echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+      - name: Run tests with coverage
+        run: |
+          pytest --maxfail=1 --disable-warnings -v --cov=. --cov-report=term-missing
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          flags: production
+          fail_ci_if_error: false
+        continue-on-error: true
 
   # Проверка безопасности
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: lint
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install safety bandit
-        pip install -r requirements.txt
-
-    - name: Run Safety check
-      run: safety check --json --output safety-report.json || true
-      continue-on-error: true
-
-    - name: Run Bandit security scan
-      run: bandit -r main/ website/ -f json -o bandit-report.json || true
-      continue-on-error: true
-
-    - name: Upload security reports
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-reports-prod
-        path: |
-          safety-report.json
-          bandit-report.json
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+          pip install -r requirements.txt
+      - name: Run Safety check
+        run: safety check --json --output safety-report.json || true
+        continue-on-error: true
+      - name: Run Bandit security scan
+        run: bandit -r main/ website/ -f json -o bandit-report.json || true
+        continue-on-error: true
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports-prod
+          path: |
+            safety-report.json
+            bandit-report.json
 
   # Проверка Docker конфигурации
   docker-check:
     name: Validate Docker Configuration
     runs-on: ubuntu-latest
     needs: lint
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Validate Dockerfile
+        run: |
+          if [ ! -f "Dockerfile" ]; then
+            echo "❌ Dockerfile not found!"
+            exit 1
+          fi
+          docker build --no-cache -t test . 2>&1 || true
+      - name: Validate docker-compose.yml
+        run: docker-compose -f docker-compose.yml config
+      - name: Validate entrypoint.sh
+        run: |
+          if [ ! -x "entrypoint.sh" ]; then
+            echo "⚠️  entrypoint.sh is not executable"
+          fi
+          bash -n entrypoint.sh
 
-    - name: Validate Dockerfile
-      run: |
-        if [ ! -f "Dockerfile" ]; then
-          echo "❌ Dockerfile not found!"
-          exit 1
-        fi
-        echo "✅ Dockerfile found"
-        
-        # Проверка синтаксиса
-        docker build --no-cache --target builder -t test . 2>&1 || true
-
-    - name: Validate docker-compose.yml
-      run: |
-        if [ ! -f "docker-compose.yml" ]; then
-          echo "❌ docker-compose.yml not found!"
-          exit 1
-        fi
-        echo "✅ docker-compose.yml found"
-        
-        # Проверка конфигурации
-        docker-compose -f docker-compose.yml config
-        echo "✅ docker-compose.yml is valid"
-
-    - name: Validate entrypoint.sh
-      run: |
-        if [ ! -f "entrypoint.sh" ]; then
-          echo "❌ entrypoint.sh not found!"
-          exit 1
-        fi
-        echo "✅ entrypoint.sh found"
-        
-        # Проверка прав доступа
-        if [ ! -x "entrypoint.sh" ]; then
-          echo "⚠️  entrypoint.sh is not executable, but will be fixed in Docker"
-        fi
-        
-        # Проверка синтаксиса bash
-        bash -n entrypoint.sh
-        echo "✅ entrypoint.sh syntax is valid"
-
-  # Деплой на Render (только для push в prod)
+  # Деплой на Render
   deploy-render:
     name: Deploy to Render
     runs-on: ubuntu-latest
     needs: [test, security, docker-check]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    if: github.ref == 'refs/heads/prod'
     environment:
       name: production
       url: https://curvative-parameter.onrender.com
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Trigger Render Deployment
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl -fsSL "$RENDER_DEPLOY_HOOK_URL"
+          echo "✅ Render deploy triggered"
 
-    - name: Validate Deploy Hook URL
-      env:
-        RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-      run: |
-        if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-          echo "❌ ERROR: RENDER_DEPLOY_HOOK_URL is not set!"
-          echo ""
-          echo "Please add it to GitHub Secrets:"
-          echo "1. Go to Settings → Secrets and variables → Actions"
-          echo "2. Click 'New repository secret'"
-          echo "3. Name: RENDER_DEPLOY_HOOK_URL"
-          echo "4. Value: [your Render deploy hook URL]"
-          exit 1
-        fi
-        
-        echo "✅ RENDER_DEPLOY_HOOK_URL is configured"
-        
-        # Проверка формата URL
-        if [[ ! "$RENDER_DEPLOY_HOOK_URL" =~ ^https://api\.render\.com/deploy/ ]]; then
-          echo "⚠️  WARNING: URL doesn't match expected Render format"
-        fi
-
-    - name: Trigger Render Deployment
-      id: deploy
-      env:
-        RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-      run: |
-        echo "🚀 Triggering Render deployment..."
-        echo "Branch: prod"
-        echo "Commit: ${{ github.sha }}"
-        echo "Author: ${{ github.actor }}"
-        echo ""
-        
-        # Отправляем webhook
-        response=$(curl -s -X POST "$RENDER_DEPLOY_HOOK_URL" \
-          -H "Content-Type: application/json" \
-          -d '{"ref":"prod","commit":"${{ github.sha }}"}' \
-          -w "\n%{http_code}" \
-          -o response_body.txt)
-        
-        http_code=$(echo "$response" | tail -n1)
-        
-        echo "HTTP Response Code: $http_code"
-        
-        if [ -f response_body.txt ]; then
-          echo "Response Body:"
-          cat response_body.txt
-          echo ""
-        fi
-        
-        # Проверка статуса
-        if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ] || [ "$http_code" -eq 204 ]; then
-          echo "✅ Deployment webhook triggered successfully!"
-          echo "status=success" >> $GITHUB_OUTPUT
-        else
-          echo "❌ Deployment webhook failed with HTTP $http_code"
-          echo "status=failed" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-
-    - name: Wait for deployment to start
-      run: |
-        echo "⏳ Waiting for Render to process the deployment..."
-        echo ""
-        echo "This typically takes 30-60 seconds to start building."
-        sleep 45
-        echo "✅ Webhook processed"
-
-    - name: Create Deployment Summary
-      if: always()
-      run: |
-        echo "## 🚀 Production Deployment to Render" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ "${{ steps.deploy.outputs.status }}" = "success" ]; then
-          echo "✅ **Status**: Deployment triggered successfully" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ **Status**: Deployment failed" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Details:**" >> $GITHUB_STEP_SUMMARY
-        echo "- 🌿 Branch: \`prod\`" >> $GITHUB_STEP_SUMMARY
-        echo "- 📦 Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- 👤 Author: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "- ⏰ Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
-        echo "- [Render Dashboard](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
-        echo "- [Application URL](https://curvative-parameter.onrender.com)" >> $GITHUB_STEP_SUMMARY
-        echo "- [Deployment Logs](https://dashboard.render.com)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
-        echo "1. Monitor build progress on Render Dashboard" >> $GITHUB_STEP_SUMMARY
-        echo "2. Wait for status to change to 'Live'" >> $GITHUB_STEP_SUMMARY
-        echo "3. Test the application at the URL above" >> $GITHUB_STEP_SUMMARY
-        echo "4. Check application logs if any issues" >> $GITHUB_STEP_SUMMARY
-
-    - name: Notify on Failure
-      if: failure()
-      run: |
-        echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Possible Issues:**" >> $GITHUB_STEP_SUMMARY
-        echo "1. Invalid RENDER_DEPLOY_HOOK_URL secret" >> $GITHUB_STEP_SUMMARY
-        echo "2. Render service is unavailable" >> $GITHUB_STEP_SUMMARY
-        echo "3. Network connectivity issues" >> $GITHUB_STEP_SUMMARY
-        echo "4. Webhook URL has expired or been regenerated" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
-        echo "- Verify the deploy hook URL in Render Settings" >> $GITHUB_STEP_SUMMARY
-        echo "- Check if the Render service is running" >> $GITHUB_STEP_SUMMARY
-        echo "- Review Render service logs for errors" >> $GITHUB_STEP_SUMMARY
-        echo "- Ensure the prod branch is correctly configured" >> $GITHUB_STEP_SUMMARY
-
-  # Создание тега релиза
+  # Создание релизного тега
   create-release:
     name: Create Release Tag
     runs-on: ubuntu-latest
     needs: deploy-render
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
-
+    if: github.ref == 'refs/heads/prod'
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Generate version
-      id: version
-      run: |
-        VERSION="v$(date +'%Y.%m.%d')-prod.${{ github.run_number }}"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Generated version: $VERSION"
-
-    - name: Generate changelog
-      id: changelog
-      run: |
-        PREV_TAG=$(git describe --abbrev=0 --tags 2>/dev/null || echo "")
-        if [ -z "$PREV_TAG" ]; then
-          CHANGELOG=$(git log --pretty=format:"- %s (%an)" --no-merges | head -20)
-        else
-          CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%an)" --no-merges)
-        fi
-        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-        echo "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
-    - name: Create Git tag
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git tag -a ${{ steps.version.outputs.version }} -m "Production release ${{ steps.version.outputs.version }}"
-        git push origin ${{ steps.version.outputs.version }}
-
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.version.outputs.version }}
-        release_name: Production Release ${{ steps.version.outputs.version }}
-        body: |
-          ## 🚀 Production Deployment
-          
-          **Version**: ${{ steps.version.outputs.version }}
-          **Branch**: prod
-          **Commit**: ${{ github.sha }}
-          **Deployed by**: @${{ github.actor }}
-          **Deployed at**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-          
-          ### ✨ Changes in this Release
-          ${{ steps.changelog.outputs.CHANGELOG }}
-          
-          ### 🔗 Links
-          - [Application](https://curvative-parameter.onrender.com)
-          - [Render Dashboard](https://dashboard.render.com)
-          - [GitHub Repository](https://github.com/${{ github.repository }})
-          
-          ### 📦 Deployment Details
-          - Platform: Render.com
-          - Runtime: Python 3.11
-          - Database: PostgreSQL 16
-          - Web Server: Gunicorn
-          
-          ### ⚙️ Configuration
-          - Workers: 4
-          - Threads: 2
-          - Timeout: 120s
-        draft: false
-        prerelease: false
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v$(date +'%Y.%m.%d')-prod.${{ github.run_number }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Create Git tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a ${{ steps.version.outputs.version }} -m "Production release ${{ steps.version.outputs.version }}"
+          git push origin ${{ steps.version.outputs.version }}
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Production Release ${{ steps.version.outputs.version }}
+          draft: false
+          prerelease: false
 
   # Финальный summary
   summary:
@@ -406,28 +205,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test, security, docker-check, deploy-render]
     if: always()
-
     steps:
-    - name: Create Final Summary
-      run: |
-        echo "## 📊 Production CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Code Quality | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Docker Check | ${{ needs.docker-check.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Render Deploy | ${{ needs.deploy-render.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ "${{ needs.deploy-render.result }}" = "success" ]; then
-          echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Your application has been deployed to Render." >> $GITHUB_STEP_SUMMARY
-          echo "Check the application at: https://curvative-parameter.onrender.com" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "### ⚠️ Check Required" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Some jobs may have failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
-        fi
+      - name: Create Final Summary
+        run: |
+          echo "## 📊 Production CI/CD Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Check | ${{ needs.docker-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Render Deploy | ${{ needs.deploy-render.result }} |" >> $GITHUB_STEP_SUMMARY
