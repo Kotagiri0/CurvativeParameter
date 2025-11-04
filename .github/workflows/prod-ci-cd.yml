@@ -57,11 +57,15 @@ jobs:
           pip install pytest pytest-django pytest-cov
       - name: Create .env for Django tests
         run: |
-          echo "DJANGO_SECRET_KEY=test_secret" > .env
+          echo "SECRET_KEY=test_secret" > .env
           echo "DEBUG=True" >> .env
-          echo "DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
+          echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
           echo "CLOUDINARY_URL=cloudinary://test_key:test_secret@test_cloud" >> .env
-          echo "DATABASE_URL=postgres://test_user:test_password@localhost:5432/test_db" >> .env
+          echo "DB_NAME=test_db" >> .env
+          echo "DB_USER=test_user" >> .env
+          echo "DB_PASSWORD=test_password" >> .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
       - run: python manage.py migrate --noinput
       - run: |
           pytest --cov=. --cov-report=term-missing
@@ -103,27 +107,21 @@ jobs:
     environment:
       name: production
       url: https://curvative-parameter.onrender.com
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate Render hook
-        run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            echo "❌ RENDER_DEPLOY_HOOK_URL is missing!"
-            exit 1
-          fi
-
       - name: Create .env for prod
         run: |
-          echo "DJANGO_SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
           echo "DEBUG=False" >> .env
-          echo "DJANGO_ALLOWED_HOSTS=curvative-parameter.onrender.com" >> .env
+          echo "ALLOWED_HOSTS=curvative-parameter.onrender.com" >> .env
           echo "CLOUDINARY_URL=${{ secrets.CLOUDINARY_URL }}" >> .env
-          echo "DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" >> .env
-
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
       - name: Deploy to Render
-        run: curl -X POST -fsSL "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        run: curl -fsSL "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
   release:
     name: Tag Release
@@ -139,5 +137,5 @@ jobs:
           VERSION="v$(date +'%Y.%m.%d')-prod.${{ github.run_number }}"
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a "$VERSION" -m "Production release $VERSION"
+          git tag -a "$VERSION" -m "Production release"
           git push origin "$VERSION"
