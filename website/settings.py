@@ -8,7 +8,7 @@ from pathlib import Path
 import dj_database_url
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
-load_dotenv()  # загружает .env в os.environ
+load_dotenv()
 
 # ===== Paths =====
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,32 +29,26 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ===== Apps =====
 INSTALLED_APPS = [
-    # Prometheus
     'django_prometheus',
-
-    # Django core
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Your app
     'main',
-
-    # Cloudinary
     'cloudinary',
     'cloudinary_storage',
-
-    # Social Auth
     'social_django',
 ]
 
 # ===== Auth Backends =====
+# ✅ ИСПРАВЛЕНО: Только рабочие backends
 AUTHENTICATION_BACKENDS = [
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
+    # ❌ УДАЛЕНО: 'main.authentication.PlainTextAuthBackend'
+    # Причина: CustomUser не существует в models.py
 ]
 
 LOGIN_REDIRECT_URL = '/'
@@ -71,19 +65,15 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = os.getenv(
 # ===== Middleware =====
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
-
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
     'social_django.middleware.SocialAuthExceptionMiddleware',
-
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
@@ -101,7 +91,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-
                 'social_django.context_processors.backends',
                 'social_django.context_processors.login_redirect',
             ],
@@ -112,8 +101,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'website.wsgi.application'
 
 # ===== Database =====
-# Prod: dj_database_url (PostgreSQL)
-# Local: sqlite fallback
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
