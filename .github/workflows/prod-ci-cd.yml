@@ -104,8 +104,8 @@ jobs:
     needs: [test, security, docker-check]
     if: github.ref == 'refs/heads/prod'
     environment:
-      name: production
-      url: https://curvative-parameter.onrender.com
+      name: .env
+      url: https://curvativeparameter-vtjg.onrender.com
     steps:
       - uses: actions/checkout@v4
 
