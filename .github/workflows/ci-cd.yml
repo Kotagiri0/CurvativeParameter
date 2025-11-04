@@ -55,6 +55,8 @@ jobs:
           echo "DB_PASSWORD=test_password" >> .env
           echo "DB_HOST=localhost" >> .env
           echo "DB_PORT=5432" >> .env
+          echo "CLOUDINARY_URL=dummy://test" >> .env
+          echo "✅ .env created for testing"
 
       - name: Run Django migrations
         run: python manage.py migrate --noinput
