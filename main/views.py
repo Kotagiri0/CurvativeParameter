@@ -757,15 +757,48 @@ def calculations(request):
 def home_page(request):
     return render(request, 'index.html')
 
+
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('home')
+            try:
+                # Сохраняем пользователя
+                user = form.save()
+
+                # ✅ Явно создаём Profile (на случай если signals не работают)
+                from .models import Profile
+                Profile.objects.get_or_create(user=user)
+
+                # ✅ ИСПРАВЛЕНО: Явно указываем backend
+                login(
+                    request,
+                    user,
+                    backend='django.contrib.auth.backends.ModelBackend'
+                )
+
+                messages.success(request, 'Регистрация прошла успешно!')
+                return redirect('home')
+
+            except Exception as e:
+                # Логируем ошибку
+                print(f"❌ Registration error: {str(e)}")
+                import traceback
+                traceback.print_exc()
+
+                # Если пользователь создан, но что-то пошло не так — удаляем его
+                if 'user' in locals() and user.id:
+                    user.delete()
+
+                messages.error(request, 'Ошибка при регистрации. Попробуйте снова.')
+        else:
+            # Показываем ошибки валидации формы
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
     else:
         form = RegisterForm()
+
     return render(request, 'register.html', {'form': form})
 
 def login_user(request):
