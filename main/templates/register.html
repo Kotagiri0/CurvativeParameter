@@ -7,7 +7,7 @@
 <section class="cp-section">
   <div class="cp-auth-card">
     <h2><i class="fas fa-user-plus" style="color: var(--accent-color);"></i> {% trans "Регистрация" %}</h2>
-    <form method="post" novalidate class="cp-form">
+    <form method="post" novalidate class="cp-form" id="registerForm">
       {% csrf_token %}
       <div class="cp-form-content">
         {% if form.errors %}
@@ -25,18 +25,22 @@
         <div class="cp-form-group">
           {{ form.username.label_tag }}
           {{ form.username }}
+          <div class="cp-validation-message" id="usernameValidation"></div>
         </div>
         <div class="cp-form-group">
           {{ form.email.label_tag }}
           {{ form.email }}
+          <div class="cp-validation-message" id="emailValidation"></div>
         </div>
         <div class="cp-form-group">
           {{ form.password1.label_tag }}
           {{ form.password1 }}
+          <div class="cp-validation-message" id="password1Validation"></div>
         </div>
         <div class="cp-form-group">
           {{ form.password2.label_tag }}
           {{ form.password2 }}
+          <div class="cp-validation-message" id="password2Validation"></div>
         </div>
       </div>
       <button type="submit" class="cp-btn cp-btn-primary">
@@ -46,6 +50,115 @@
     </form>
   </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Получаем элементы DOM
+  const usernameInput = document.getElementById('id_username');
+  const emailInput = document.getElementById('id_email');
+  const password1Input = document.getElementById('id_password1');
+  const password2Input = document.getElementById('id_password2');
+
+  const usernameValidation = document.getElementById('usernameValidation');
+  const emailValidation = document.getElementById('emailValidation');
+  const password1Validation = document.getElementById('password1Validation');
+  const password2Validation = document.getElementById('password2Validation');
+
+  // Функции валидации
+  function validateUsername() {
+    const value = usernameInput.value;
+    if (value.length === 0) {
+      usernameValidation.textContent = '';
+      usernameValidation.className = 'cp-validation-message';
+    } else if (value.length < 3) {
+      usernameValidation.textContent = 'Минимум 3 символа';
+      usernameValidation.className = 'cp-validation-message cp-validation-error';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      usernameValidation.textContent = 'Только буквы, цифры и _';
+      usernameValidation.className = 'cp-validation-message cp-validation-error';
+    } else {
+      usernameValidation.textContent = '✓ Корректно';
+      usernameValidation.className = 'cp-validation-message cp-validation-success';
+    }
+  }
+
+  function validateEmail() {
+    const value = emailInput.value;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value.length === 0) {
+      emailValidation.textContent = '';
+      emailValidation.className = 'cp-validation-message';
+    } else if (!emailRegex.test(value)) {
+      emailValidation.textContent = 'Неверный формат email';
+      emailValidation.className = 'cp-validation-message cp-validation-error';
+    } else {
+      emailValidation.textContent = '✓ Корректно';
+      emailValidation.className = 'cp-validation-message cp-validation-success';
+    }
+  }
+
+  function validatePassword1() {
+    const value = password1Input.value;
+    if (value.length === 0) {
+      password1Validation.textContent = '';
+      password1Validation.className = 'cp-validation-message';
+    } else if (value.length < 8) {
+      password1Validation.textContent = 'Минимум 8 символов';
+      password1Validation.className = 'cp-validation-message cp-validation-error';
+    } else {
+      password1Validation.textContent = '✓ Надежный пароль';
+      password1Validation.className = 'cp-validation-message cp-validation-success';
+    }
+
+    // Проверяем совпадение паролей при изменении первого пароля
+    if (password2Input && password2Input.value.length > 0) {
+      validatePassword2();
+    }
+  }
+
+  function validatePassword2() {
+    const value = password2Input.value;
+    const password1Value = password1Input.value;
+    if (value.length === 0) {
+      password2Validation.textContent = '';
+      password2Validation.className = 'cp-validation-message';
+    } else if (value !== password1Value) {
+      password2Validation.textContent = 'Пароли не совпадают';
+      password2Validation.className = 'cp-validation-message cp-validation-error';
+    } else {
+      password2Validation.textContent = '✓ Пароли совпадают';
+      password2Validation.className = 'cp-validation-message cp-validation-success';
+    }
+  }
+
+  // Добавляем обработчики событий с проверкой на существование элементов
+  if (usernameInput && usernameValidation) {
+    usernameInput.addEventListener('input', validateUsername);
+    usernameInput.addEventListener('blur', validateUsername);
+  }
+
+  if (emailInput && emailValidation) {
+    emailInput.addEventListener('input', validateEmail);
+    emailInput.addEventListener('blur', validateEmail);
+  }
+
+  if (password1Input && password1Validation) {
+    password1Input.addEventListener('input', validatePassword1);
+    password1Input.addEventListener('blur', validatePassword1);
+  }
+
+  if (password2Input && password2Validation) {
+    password2Input.addEventListener('input', validatePassword2);
+    password2Input.addEventListener('blur', validatePassword2);
+  }
+
+  // Валидация при загрузке, если есть значения (например, после ошибки формы)
+  if (usernameInput && usernameInput.value) validateUsername();
+  if (emailInput && emailInput.value) validateEmail();
+  if (password1Input && password1Input.value) validatePassword1();
+  if (password2Input && password2Input.value) validatePassword2();
+});
+</script>
 
 <style>
   /* Основные стили */
@@ -145,6 +258,22 @@
 
   [data-theme="dark"] .cp-form-group input:focus {
     background: rgba(50, 50, 50, 0.7);
+  }
+
+  /* Валидация */
+  .cp-validation-message {
+    font-size: 0.8rem;
+    margin-top: 5px;
+    min-height: 18px;
+    transition: all 0.3s ease;
+  }
+
+  .cp-validation-error {
+    color: #ff4d4d;
+  }
+
+  .cp-validation-success {
+    color: #4caf50;
   }
 
   /* Кнопка */

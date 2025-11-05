@@ -6,7 +6,7 @@
 <section class="cp-section">
   <div class="cp-auth-card">
     <h2><i class="fas fa-sign-in-alt" style="color: var(--accent-color);"></i> Вход</h2>
-    <form method="post" novalidate class="cp-form">
+    <form method="post" novalidate class="cp-form" id="loginForm">
       {% csrf_token %}
       <div class="cp-form-content">
         {% if form.errors %}
@@ -24,10 +24,12 @@
         <div class="cp-form-group">
           <label for="username"><i class="fas fa-user"></i> Имя пользователя</label>
           <input type="text" id="username" name="username" placeholder="Введите имя пользователя" required>
+          <div class="cp-validation-message" id="usernameValidation"></div>
         </div>
         <div class="cp-form-group">
           <label for="password"><i class="fas fa-lock"></i> Пароль</label>
           <input type="password" id="password" name="password" placeholder="Введите пароль" required>
+          <div class="cp-validation-message" id="passwordValidation"></div>
         </div>
       </div>
       <button type="submit" class="cp-btn cp-btn-primary">
@@ -37,6 +39,173 @@
     </form>
   </div>
 </section>
+
+<!-- React Root -->
+<div id="react-form-validation"></div>
+
+<!-- React CDN -->
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+<script>
+  // Проверяем доступность React перед использованием
+  if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+    const { useState, useEffect, useCallback } = React;
+
+    function FormValidation() {
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+
+      const validateUsername = useCallback((value) => {
+        const validationElement = document.getElementById('usernameValidation');
+        if (!validationElement) return;
+
+        if (value.length === 0) {
+          validationElement.textContent = '';
+          validationElement.className = 'cp-validation-message';
+        } else if (value.length < 3) {
+          validationElement.textContent = 'Минимум 3 символа';
+          validationElement.className = 'cp-validation-message cp-validation-error';
+        } else {
+          validationElement.textContent = '✓ Корректно';
+          validationElement.className = 'cp-validation-message cp-validation-success';
+        }
+      }, []);
+
+      const validatePassword = useCallback((value) => {
+        const validationElement = document.getElementById('passwordValidation');
+        if (!validationElement) return;
+
+        if (value.length === 0) {
+          validationElement.textContent = '';
+          validationElement.className = 'cp-validation-message';
+        } else if (value.length < 6) {
+          validationElement.textContent = 'Минимум 6 символов';
+          validationElement.className = 'cp-validation-message cp-validation-error';
+        } else {
+          validationElement.textContent = '✓ Корректно';
+          validationElement.className = 'cp-validation-message cp-validation-success';
+        }
+      }, []);
+
+      useEffect(() => {
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+
+        if (!usernameInput || !passwordInput) {
+          console.warn('Form elements not found');
+          return;
+        }
+
+        const handleUsernameInput = (e) => {
+          const value = e.target.value;
+          setUsername(value);
+          validateUsername(value);
+        };
+
+        const handlePasswordInput = (e) => {
+          const value = e.target.value;
+          setPassword(value);
+          validatePassword(value);
+        };
+
+        // Добавляем обработчики
+        usernameInput.addEventListener('input', handleUsernameInput);
+        passwordInput.addEventListener('input', handlePasswordInput);
+
+        // Инициализируем валидацию для текущих значений
+        validateUsername(usernameInput.value);
+        validatePassword(passwordInput.value);
+
+        return () => {
+          usernameInput.removeEventListener('input', handleUsernameInput);
+          passwordInput.removeEventListener('input', handlePasswordInput);
+        };
+      }, [validateUsername, validatePassword]);
+
+      // React-компонент не рендерит видимый контент
+      return null;
+    }
+
+    // Безопасное монтирование React-компонента
+    const mountReactApp = () => {
+      const container = document.getElementById('react-form-validation');
+      if (!container) {
+        console.warn('React container not found');
+        return;
+      }
+
+      try {
+        const root = ReactDOM.createRoot(container);
+        root.render(React.createElement(FormValidation));
+      } catch (error) {
+        console.error('Error mounting React app:', error);
+        // Fallback на чистый JavaScript если React не работает
+        setupFallbackValidation();
+      }
+    };
+
+    // Fallback на чистый JavaScript
+    const setupFallbackValidation = () => {
+      console.log('Using fallback JavaScript validation');
+
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const usernameValidation = document.getElementById('usernameValidation');
+      const passwordValidation = document.getElementById('passwordValidation');
+
+      if (!usernameInput || !passwordInput || !usernameValidation || !passwordValidation) {
+        return;
+      }
+
+      const validateUsername = (e) => {
+        const value = e.target.value;
+        if (value.length === 0) {
+          usernameValidation.textContent = '';
+          usernameValidation.className = 'cp-validation-message';
+        } else if (value.length < 3) {
+          usernameValidation.textContent = 'Минимум 3 символа';
+          usernameValidation.className = 'cp-validation-message cp-validation-error';
+        } else {
+          usernameValidation.textContent = '✓ Корректно';
+          usernameValidation.className = 'cp-validation-message cp-validation-success';
+        }
+      };
+
+      const validatePassword = (e) => {
+        const value = e.target.value;
+        if (value.length === 0) {
+          passwordValidation.textContent = '';
+          passwordValidation.className = 'cp-validation-message';
+        } else if (value.length < 6) {
+          passwordValidation.textContent = 'Минимум 6 символов';
+          passwordValidation.className = 'cp-validation-message cp-validation-error';
+        } else {
+          passwordValidation.textContent = '✓ Корректно';
+          passwordValidation.className = 'cp-validation-message cp-validation-success';
+        }
+      };
+
+      usernameInput.addEventListener('input', validateUsername);
+      passwordInput.addEventListener('input', validatePassword);
+    };
+
+    // Запускаем когда DOM готов
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', mountReactApp);
+    } else {
+      mountReactApp();
+    }
+  } else {
+    console.warn('React is not available, using fallback validation');
+    // Если React не загрузился, используем fallback
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupFallbackValidation);
+    } else {
+      setupFallbackValidation();
+    }
+  }
+</script>
 
 <style>
   /* Основные стили */
@@ -136,6 +305,22 @@
 
   [data-theme="dark"] .cp-form-group input:focus {
     background: rgba(50, 50, 50, 0.7);
+  }
+
+  /* Валидация */
+  .cp-validation-message {
+    font-size: 0.8rem;
+    margin-top: 5px;
+    min-height: 18px;
+    transition: all 0.3s ease;
+  }
+
+  .cp-validation-error {
+    color: #ff4d4d;
+  }
+
+  .cp-validation-success {
+    color: #4caf50;
   }
 
   /* Кнопка */
@@ -239,6 +424,11 @@
     .cp-auth-link {
       font-size: 0.85rem;
     }
+  }
+
+  /* Скрыть React root */
+  #react-form-validation {
+    display: none;
   }
 </style>
 {% endblock %}
