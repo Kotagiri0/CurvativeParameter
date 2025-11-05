@@ -155,19 +155,18 @@ def get_average_error(content):
     return "N/A"
 
 
-from django import template
-
-register = template.Library()
-
-
 @register.filter
 def extract_comment(content):
+    """
+    Извлекает пользовательский комментарий из post.content, игнорируя технические данные.
+    Возвращает комментарий или пустую строку, если его нет.
+    """
     if not content:
         return ""
 
     lines = content.split("\n")
-    table_data_index = -1
 
+    table_data_index = -1
     for i, line in enumerate(lines):
         if line.startswith("Данные таблицы:"):
             table_data_index = i
@@ -177,18 +176,11 @@ def extract_comment(content):
         return ""
 
     comment_lines = []
-
     for line in lines[table_data_index + 1:]:
-        stripped = line.strip()
+        if line.strip() and not line.strip().replace(",", "").replace(".", "").isdigit():
+            comment_lines.append(line)
 
-        if "," in stripped and all(
-            part.replace(".", "").isdigit() for part in stripped.split(",")
-        ):
-            continue
-
-        if not stripped:
-            continue
-
-        comment_lines.append(line)
-
-    return "\n".join(comment_lines).strip()
+    print("comm:", comment_lines)
+    if len(comment_lines) == 2:
+        comment_lines.pop(0)
+    return "\n".join(comment_lines).strip() if comment_lines else ""
