@@ -1,2 +1,2 @@
-Ы# CurvativeParameter
+# CurvativeParameter
 HSE Lyceum IT Projects - CurvativeParameter
